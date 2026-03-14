@@ -17,6 +17,11 @@ struct NeatEditorApp: App {
                     documentManager.createNewDocument()
                 }
                 .keyboardShortcut("n", modifiers: .command)
+
+                Button("New Tab") {
+                    documentManager.createNewDocument()
+                }
+                .keyboardShortcut("t", modifiers: .command)
             }
             CommandGroup(replacing: .saveItem) {
                 Button("Save") {

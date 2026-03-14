@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Build products
+build/
+DerivedData/
+*.xcresult
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Local tooling metadata
+.gitnexus/
+.claude/
+CLAUDE.md
+
+# Local logs and scratch files
+*.log
+*.tmp
+*.swp
+*.orig
+build_output.txt

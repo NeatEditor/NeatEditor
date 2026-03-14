@@ -1,8 +1,10 @@
+import AppKit
 import SwiftUI
 
 struct TabBarView: View {
     @Binding var tabs: [TabItem]
     @Binding var selectedTabID: UUID?
+    @State private var selectedTabFrame: CGRect = .null
     
     // Window control buttons width + padding to ensure tabs don't overlap traffic lights
     private let leadingPadding: CGFloat = 76
@@ -20,11 +22,13 @@ struct TabBarView: View {
             .padding(.trailing, 16)
             .padding(.top, 6)
         }
+        .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
+        .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
+            selectedTabFrame = frame
+        }
         .background(EditorChrome.tabBarBackground)
-        .background(alignment: .bottom) {
-            Rectangle()
-                .fill(EditorChrome.border)
-                .frame(height: 1)
+        .overlay(alignment: .bottom) {
+            TabBarDividerOverlay(selectedTabFrame: selectedTabFrame)
         }
         .frame(height: 38)
     }
@@ -32,6 +36,20 @@ struct TabBarView: View {
 
 // Subview for a single Tab
 struct TabItemView: View {
+    private static let titleFontSize: CGFloat = 13
+    private static let minimumHorizontalPadding: CGFloat = textWidth(for: "untit")
+    private static let minimumTabWidth: CGFloat = {
+        let titleWidth = textWidth(for: "untitleduntitled")
+        return ceil(titleWidth + (minimumHorizontalPadding * 2))
+    }()
+
+    private static func textWidth(for text: String) -> CGFloat {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: titleFontSize, weight: .medium)
+        ]
+        return (text as NSString).size(withAttributes: attributes).width
+    }
+
     @Binding var tab: TabItem
     let isSelected: Bool
     let action: () -> Void
@@ -49,7 +67,7 @@ struct TabItemView: View {
                     if isEditing {
                         TextField("", text: $tab.title)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 13, weight: isSelected ? .medium : .regular))
+                            .font(.system(size: Self.titleFontSize, weight: isSelected ? .medium : .regular))
                             .focused($isFocused)
                             .labelsHidden()
                             .onSubmit {
@@ -63,19 +81,27 @@ struct TabItemView: View {
                             .frame(minWidth: 40)
                     } else {
                         Text(tab.title)
-                            .font(.system(size: 13, weight: isSelected ? .medium : .regular))
+                            .font(.system(size: Self.titleFontSize, weight: isSelected ? .medium : .regular))
                             .foregroundColor(isSelected ? .primary : .secondary)
                     }
                 }
-                .padding(.horizontal, 14)
+                .padding(.horizontal, Self.minimumHorizontalPadding)
                 .padding(.top, 6)
                 .padding(.bottom, 8)
             }
-            .frame(minWidth: 68)
+            .frame(minWidth: Self.minimumTabWidth)
             .frame(height: 32, alignment: .bottom)
         }
         .buttonStyle(.plain)
         .zIndex(isSelected ? 1 : 0)
+        .background {
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: SelectedTabFramePreferenceKey.self,
+                    value: isSelected ? proxy.frame(in: .named(TabBarLayout.coordinateSpaceName)) : .null
+                )
+            }
+        }
         .onHover { hovering in
             isHovering = hovering
         }
@@ -88,10 +114,10 @@ struct TabItemView: View {
     @ViewBuilder
     private var tabBackground: some View {
         if isSelected {
-            ConnectedTabFillShape(cornerRadius: 9)
+            ConnectedTabFillShape(topInset: 6, topCornerRadius: 9, bottomJoinRadius: 9)
                 .fill(EditorChrome.editorSurface)
                 .overlay {
-                    ConnectedTabBorderShape(cornerRadius: 9)
+                    ConnectedTabBorderShape(topInset: 6, topCornerRadius: 9, bottomJoinRadius: 9)
                         .stroke(
                             EditorChrome.border,
                             style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round)
@@ -107,25 +133,87 @@ struct TabItemView: View {
     }
 }
 
+private enum TabBarLayout {
+    static let coordinateSpaceName = "TabBarLayout"
+}
+
+private struct SelectedTabFramePreferenceKey: PreferenceKey {
+    static let defaultValue: CGRect = .null
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let nextValue = nextValue()
+        if !nextValue.isNull {
+            value = nextValue
+        }
+    }
+}
+
+private struct TabBarDividerOverlay: View {
+    let selectedTabFrame: CGRect
+
+    var body: some View {
+        GeometryReader { proxy in
+            Path { path in
+                let y = proxy.size.height - 0.5
+
+                if selectedTabFrame.isNull {
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: proxy.size.width, y: y))
+                    return
+                }
+
+                let leftEnd = max(0, min(selectedTabFrame.minX, proxy.size.width))
+                let rightStart = max(0, min(selectedTabFrame.maxX, proxy.size.width))
+
+                if leftEnd > 0 {
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: leftEnd, y: y))
+                }
+
+                if rightStart < proxy.size.width {
+                    path.move(to: CGPoint(x: rightStart, y: y))
+                    path.addLine(to: CGPoint(x: proxy.size.width, y: y))
+                }
+            }
+            .stroke(EditorChrome.border, lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 private struct ConnectedTabFillShape: Shape {
-    let cornerRadius: CGFloat
+    let topInset: CGFloat
+    let topCornerRadius: CGFloat
+    let bottomJoinRadius: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        let radius = min(cornerRadius, rect.width / 2, rect.height / 2)
+        let inset = min(topInset, rect.width / 4)
+        let topRadius = min(topCornerRadius, rect.width / 2, rect.height / 2)
+        let bottomRadius = min(bottomJoinRadius, rect.width / 2, rect.height / 2)
         var path = Path()
 
         path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + radius))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.minX + radius, y: rect.minY),
-            control: CGPoint(x: rect.minX, y: rect.minY)
+        path.addArc(
+            tangent1End: CGPoint(x: rect.minX + inset, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.minX + inset, y: rect.minY),
+            radius: bottomRadius
         )
-        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX + inset, y: rect.minY + topRadius))
         path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY + radius),
-            control: CGPoint(x: rect.maxX, y: rect.minY)
+            to: CGPoint(x: rect.minX + inset + topRadius, y: rect.minY),
+            control: CGPoint(x: rect.minX + inset, y: rect.minY)
         )
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX - inset - topRadius, y: rect.minY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX - inset, y: rect.minY + topRadius),
+            control: CGPoint(x: rect.maxX - inset, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - inset, y: rect.maxY - bottomRadius))
+        path.addArc(
+            tangent1End: CGPoint(x: rect.maxX - inset, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.maxX, y: rect.maxY),
+            radius: bottomRadius
+        )
         path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
 
         return path
@@ -133,24 +221,38 @@ private struct ConnectedTabFillShape: Shape {
 }
 
 private struct ConnectedTabBorderShape: Shape {
-    let cornerRadius: CGFloat
+    let topInset: CGFloat
+    let topCornerRadius: CGFloat
+    let bottomJoinRadius: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        let radius = min(cornerRadius, rect.width / 2, rect.height / 2)
+        let inset = min(topInset, rect.width / 4)
+        let topRadius = min(topCornerRadius, rect.width / 2, rect.height / 2)
+        let bottomRadius = min(bottomJoinRadius, rect.width / 2, rect.height / 2)
         var path = Path()
 
         path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + radius))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.minX + radius, y: rect.minY),
-            control: CGPoint(x: rect.minX, y: rect.minY)
+        path.addArc(
+            tangent1End: CGPoint(x: rect.minX + inset, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.minX + inset, y: rect.minY),
+            radius: bottomRadius
         )
-        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX + inset, y: rect.minY + topRadius))
         path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY + radius),
-            control: CGPoint(x: rect.maxX, y: rect.minY)
+            to: CGPoint(x: rect.minX + inset + topRadius, y: rect.minY),
+            control: CGPoint(x: rect.minX + inset, y: rect.minY)
         )
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX - inset - topRadius, y: rect.minY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX - inset, y: rect.minY + topRadius),
+            control: CGPoint(x: rect.maxX - inset, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - inset, y: rect.maxY - bottomRadius))
+        path.addArc(
+            tangent1End: CGPoint(x: rect.maxX - inset, y: rect.maxY),
+            tangent2End: CGPoint(x: rect.maxX, y: rect.maxY),
+            radius: bottomRadius
+        )
 
         return path
     }

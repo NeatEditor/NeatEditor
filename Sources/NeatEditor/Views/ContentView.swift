@@ -11,14 +11,11 @@ struct ContentView: View {
 
             if let selectedTabID = documentManager.selectedTabID,
                let index = documentManager.tabs.firstIndex(where: { $0.id == selectedTabID }) {
-                TextEditor(text: Bindable(documentManager).tabs[index].content)
-                    .font(.system(.body, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .background(EditorChrome.editorSurface)
+                LineNumberTextEditor(text: Bindable(documentManager).tabs[index].content) {
+                    documentManager.queueAutoSave(for: selectedTabID)
+                }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onChange(of: documentManager.tabs[index].content) { _, _ in
-                        documentManager.queueAutoSave(for: selectedTabID)
-                    }
+                    .clipped()
                     .background(EditorChrome.editorSurface)
                     .overlay {
                         EditorSurfaceBorderShape()

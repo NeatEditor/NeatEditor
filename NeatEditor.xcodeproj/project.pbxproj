@@ -13,10 +13,12 @@
 		555AE572774E813E1EE630B2 /* EditorChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4E3FA87533D5B31C17C6A0 /* EditorChrome.swift */; };
 		71CA1C00CFA65D165819D890 /* TabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9C056A4636CFFAD1F20C226 /* TabItem.swift */; };
 		9AA8A5C6A9DC4AF56954C2C4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B567D6FDCBD90B6E8F016CB0 /* ContentView.swift */; };
+		A11AB0EA937ACF61DD1013A8 /* LineNumberTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FA3A778541E3DDF2A58FA4 /* LineNumberTextEditor.swift */; };
 		E00EC6C0F8F4287B72CE19B9 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692AE609E1E9F30E09D3BA26 /* TabBarView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		14FA3A778541E3DDF2A58FA4 /* LineNumberTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberTextEditor.swift; sourceTree = "<group>"; };
 		1EF032AC02271251D613513E /* DocumentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentManager.swift; sourceTree = "<group>"; };
 		692AE609E1E9F30E09D3BA26 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
 		7AE177253A6D16097E143352 /* NeatEditorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeatEditorApp.swift; sourceTree = "<group>"; };
@@ -57,6 +59,7 @@
 			children = (
 				B567D6FDCBD90B6E8F016CB0 /* ContentView.swift */,
 				EB4E3FA87533D5B31C17C6A0 /* EditorChrome.swift */,
+				14FA3A778541E3DDF2A58FA4 /* LineNumberTextEditor.swift */,
 				692AE609E1E9F30E09D3BA26 /* TabBarView.swift */,
 			);
 			path = Views;
@@ -163,6 +166,7 @@
 				9AA8A5C6A9DC4AF56954C2C4 /* ContentView.swift in Sources */,
 				2969C19C0A416A9B8EEA5081 /* DocumentManager.swift in Sources */,
 				555AE572774E813E1EE630B2 /* EditorChrome.swift in Sources */,
+				A11AB0EA937ACF61DD1013A8 /* LineNumberTextEditor.swift in Sources */,
 				28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */,
 				E00EC6C0F8F4287B72CE19B9 /* TabBarView.swift in Sources */,
 				71CA1C00CFA65D165819D890 /* TabItem.swift in Sources */,
