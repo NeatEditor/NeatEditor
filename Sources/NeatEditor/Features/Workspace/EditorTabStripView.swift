@@ -1,6 +1,14 @@
 import AppKit
 import SwiftUI
 
+/// Set by tab button actions to prevent the title bar event monitor
+/// from also triggering window zoom on the same double-click.
+private nonisolated(unsafe) var tabStripSuppressNextZoom = false
+
+/// Written by EditorTabItemView before editing ends, read by
+/// EditorTabStripView's dismiss callback to call onRenameTab.
+private nonisolated(unsafe) var tabStripPendingRename: String?
+
 struct EditorTabStripView: View {
     static let titleBarHeight: CGFloat = 38
     static let leadingPadding: CGFloat = 76
@@ -68,22 +76,6 @@ struct EditorTabStripView: View {
                 .padding(.top, 4)
         }
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if editingTabID != nil {
-                NSApp.keyWindow?.makeFirstResponder(nil)
-                editingTabID = nil
-            }
-        }
-        .simultaneousGesture(TapGesture(count: 2).onEnded {
-            let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize"
-            guard action != "None", let window = NSApp.keyWindow else { return }
-            if action == "Maximize" {
-                window.zoom(nil)
-            } else if action == "Minimize" {
-                window.performMiniaturize(nil)
-            }
-        })
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
             selectedTabFrame = frame
         }
@@ -99,7 +91,26 @@ struct EditorTabStripView: View {
                 isWindowPinned: isWindowPinned
             )
         }
+        .background {
+            TitleBarEventMonitor(
+                isEditing: editingTabID != nil,
+                onDismissEditing: { dismissEditing() }
+            )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            dismissEditing()
+        }
         .frame(height: Self.titleBarHeight)
+    }
+
+    private func dismissEditing() {
+        guard let tabID = editingTabID else { return }
+        // Read the pending rename that EditorTabItemView wrote before we clear editing.
+        if let newTitle = tabStripPendingRename {
+            tabStripPendingRename = nil
+            onRenameTab(tabID, newTitle)
+        }
+        editingTabID = nil
     }
 }
 
@@ -154,10 +165,13 @@ struct EditorTabItemView: View {
 
     @State private var isHovering = false
     @State private var draftTitle = ""
+    @State private var lastSelectedClickTime: Date = .distantPast
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            handleClick()
+        } label: {
             ZStack(alignment: .bottom) {
                 tabBackground
 
@@ -169,19 +183,6 @@ struct EditorTabItemView: View {
                             .focused($isFocused)
                             .labelsHidden()
                             .onSubmit {
-                                commitTitleEditing()
-                            }
-                            .onChange(of: isFocused) { _, isFocusedValue in
-                                if !isFocusedValue {
-                                    commitTitleEditing()
-                                }
-                            }
-                            .onChange(of: isEditing) { _, isEditingValue in
-                                if !isEditingValue {
-                                    commitTitleEditing()
-                                }
-                            }
-                            .onDisappear {
                                 commitTitleEditing()
                             }
                             .frame(minWidth: 40)
@@ -215,21 +216,52 @@ struct EditorTabItemView: View {
         .onHover { hovering in
             isHovering = hovering
         }
-        .onTapGesture(count: 2) {
-            draftTitle = tab.title
-            isEditing = true
-            isFocused = true
+        .onChange(of: draftTitle) { _, newValue in
+            if isEditing {
+                tabStripPendingRename = sanitizedTitle(from: newValue)
+            }
         }
     }
 
-    private func commitTitleEditing() {
-        let sanitizedTitle = sanitizedTitle(from: draftTitle)
-        if !sanitizedTitle.isEmpty {
-            DispatchQueue.main.async {
-                onRename(sanitizedTitle)
-            }
+    private func handleClick() {
+        guard !isEditing else { return }
+
+        // Suppress the monitor's zoom for this click event, auto-clearing
+        // after the double-click interval so it never leaks into future events
+        // but survives long enough to cover a full double-click sequence.
+        tabStripSuppressNextZoom = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + NSEvent.doubleClickInterval + 0.1) {
+            tabStripSuppressNextZoom = false
         }
 
+        if isSelected {
+            let now = Date()
+            if now.timeIntervalSince(lastSelectedClickTime) < NSEvent.doubleClickInterval {
+                draftTitle = tab.title
+                tabStripPendingRename = sanitizedTitle(from: tab.title)
+                isEditing = true
+                isFocused = true
+                lastSelectedClickTime = .distantPast
+                return
+            }
+            lastSelectedClickTime = now
+        } else {
+            lastSelectedClickTime = .distantPast
+        }
+
+        action()
+    }
+
+    /// Called only from onSubmit (Enter key). For external dismiss (click
+    /// outside), the parent reads tabStripPendingRename directly.
+    private func commitTitleEditing() {
+        lastSelectedClickTime = .distantPast
+        tabStripPendingRename = nil
+
+        let sanitizedTitle = sanitizedTitle(from: draftTitle)
+        if !sanitizedTitle.isEmpty {
+            onRename(sanitizedTitle)
+        }
         draftTitle = tab.title
         isEditing = false
     }
@@ -271,6 +303,110 @@ struct EditorTabItemView: View {
                 .padding(.horizontal, 2)
                 .padding(.top, 3)
                 .padding(.bottom, 5)
+        }
+    }
+}
+
+private struct TitleBarEventMonitor: NSViewRepresentable {
+    let isEditing: Bool
+    let onDismissEditing: () -> Void
+
+    func makeNSView(context: Context) -> TitleBarEventNSView {
+        let view = TitleBarEventNSView()
+        view.isEditing = isEditing
+        view.onDismissEditing = onDismissEditing
+        return view
+    }
+
+    func updateNSView(_ nsView: TitleBarEventNSView, context: Context) {
+        nsView.isEditing = isEditing
+        nsView.onDismissEditing = onDismissEditing
+    }
+
+    final class TitleBarEventNSView: NSView {
+        var isEditing = false
+        var onDismissEditing: (() -> Void)?
+        private var clickMonitor: Any?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            installMonitor()
+        }
+
+        override func viewWillMove(toWindow newWindow: NSWindow?) {
+            if newWindow == nil {
+                removeMonitor()
+            }
+            super.viewWillMove(toWindow: newWindow)
+        }
+
+        private func installMonitor() {
+            removeMonitor()
+            clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { [weak self] event in
+                self?.handleMouseEvent(event)
+                return event
+            }
+        }
+
+        private func removeMonitor() {
+            if let clickMonitor {
+                NSEvent.removeMonitor(clickMonitor)
+                self.clickMonitor = nil
+            }
+        }
+
+        private func handleMouseEvent(_ event: NSEvent) {
+            if event.type == .leftMouseDown {
+                // Dismiss editing when clicking outside the title bar area
+                // (where the rename text field lives).
+                if isEditing && !isClickInTitleBarRegion(event) {
+                    DispatchQueue.main.async { [weak self] in
+                        self?.onDismissEditing?()
+                    }
+                }
+            } else if event.type == .leftMouseUp {
+                // Title bar double-click zoom on mouseUp so the SwiftUI Button
+                // action (also mouseUp) has already set the suppress flag.
+                guard event.clickCount >= 2,
+                      event.window === self.window,
+                      isClickInTitleBarRegion(event) else { return }
+
+                // Defer to the next run loop iteration. The Button action fires
+                // synchronously during event dispatch, so by the next iteration
+                // the suppress flag is guaranteed to be set if a tab was clicked.
+                DispatchQueue.main.async { [weak self] in
+                    if tabStripSuppressNextZoom {
+                        tabStripSuppressNextZoom = false
+                        return
+                    }
+                    self?.performTitleBarDoubleClickAction()
+                }
+            }
+        }
+
+        /// Check if the click is within the title bar / tab strip region
+        /// (the top portion of the window).
+        private func isClickInTitleBarRegion(_ event: NSEvent) -> Bool {
+            guard let window = event.window else { return false }
+            // With .hiddenTitleBar, the content fills the entire window.
+            // The tab strip occupies the top titleBarHeight points.
+            let titleBarHeight = EditorTabStripView.titleBarHeight
+            let windowHeight = window.frame.height
+            return event.locationInWindow.y >= (windowHeight - titleBarHeight)
+        }
+
+        private func performTitleBarDoubleClickAction() {
+            let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize"
+            guard action != "None", let window = self.window else { return }
+            if action == "Maximize" {
+                window.zoom(nil)
+            } else if action == "Minimize" {
+                window.performMiniaturize(nil)
+            }
+        }
+
+        deinit {
+            removeMonitor()
         }
     }
 }
