@@ -349,7 +349,10 @@ private final class LineNumberGutterView: NSView {
     }
 
     static var gutterColor: NSColor {
-        NSColor.tertiaryLabelColor.withAlphaComponent(0.9)
+        NSColor.quaternaryLabelColor.blended(
+            withFraction: 0.5,
+            of: NSColor.tertiaryLabelColor.withAlphaComponent(0.75)
+        ) ?? NSColor.tertiaryLabelColor.withAlphaComponent(0.6)
     }
 
     static var separatorColor: NSColor {

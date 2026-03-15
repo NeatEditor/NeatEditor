@@ -11,7 +11,7 @@ struct TabBarView: View {
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+            HStack(spacing: 0) {
                 ForEach($tabs) { $tab in
                     TabItemView(tab: $tab, isSelected: selectedTabID == tab.id) {
                         selectedTabID = tab.id
@@ -26,9 +26,11 @@ struct TabBarView: View {
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
             selectedTabFrame = frame
         }
-        .background(EditorChrome.tabBarBackground)
-        .overlay(alignment: .bottom) {
-            TabBarDividerOverlay(selectedTabFrame: selectedTabFrame)
+        .background {
+            ZStack(alignment: .bottom) {
+                EditorChrome.tabBarBackground
+                TabBarDividerOverlay(selectedTabFrame: selectedTabFrame)
+            }
         }
         .frame(height: 38)
     }
@@ -91,6 +93,7 @@ struct TabItemView: View {
             }
             .frame(minWidth: Self.minimumTabWidth)
             .frame(height: 32, alignment: .bottom)
+            .contentShape(TabItemHitShape(isSelected: isSelected))
         }
         .buttonStyle(.plain)
         .zIndex(isSelected ? 1 : 0)
@@ -130,6 +133,19 @@ struct TabItemView: View {
                 .padding(.top, 3)
                 .padding(.bottom, 5)
         }
+    }
+}
+
+private struct TabItemHitShape: Shape {
+    let isSelected: Bool
+
+    func path(in rect: CGRect) -> Path {
+        if isSelected {
+            return ConnectedTabFillShape(topInset: 6, topCornerRadius: 9, bottomJoinRadius: 9)
+                .path(in: rect)
+        }
+
+        return Rectangle().path(in: rect)
     }
 }
 
