@@ -17,38 +17,43 @@ struct WorkspaceView: View {
 
             if let selectedTabID = workspaceStore.selectedTabID,
                let index = workspaceStore.tabs.firstIndex(where: { $0.id == selectedTabID }) {
-                EditorTextView(
-                    text: $bindableWorkspace.tabs[index].content,
-                    fontSize: workspaceStore.editorFontSize,
-                    searchQuery: workspaceStore.searchQuery,
-                    searchRequestID: workspaceStore.searchRequestID,
-                    onTextChange: { isComposing in
-                        if isComposing {
-                            workspaceStore.cancelAutoSave(for: selectedTabID)
-                        } else {
+                let tab = workspaceStore.tabs[index]
+                if tab.isSettings {
+                    SettingsView()
+                } else {
+                    EditorTextView(
+                        text: $bindableWorkspace.tabs[index].content,
+                        fontSize: workspaceStore.editorFontSize,
+                        searchQuery: workspaceStore.searchQuery,
+                        searchRequestID: workspaceStore.searchRequestID,
+                        onTextChange: { isComposing in
+                            if isComposing {
+                                workspaceStore.cancelAutoSave(for: selectedTabID)
+                            } else {
+                                workspaceStore.queueAutoSave(for: selectedTabID)
+                            }
+                        },
+                        onCompositionEnd: {
                             workspaceStore.queueAutoSave(for: selectedTabID)
+                        },
+                        onIncreaseFontSize: {
+                            workspaceStore.increaseEditorFontSize()
+                        },
+                        onDecreaseFontSize: {
+                            workspaceStore.decreaseEditorFontSize()
+                        },
+                        onOpenFiles: { urls in
+                            workspaceStore.openFiles(at: urls)
                         }
-                    },
-                    onCompositionEnd: {
-                        workspaceStore.queueAutoSave(for: selectedTabID)
-                    },
-                    onIncreaseFontSize: {
-                        workspaceStore.increaseEditorFontSize()
-                    },
-                    onDecreaseFontSize: {
-                        workspaceStore.decreaseEditorFontSize()
-                    },
-                    onOpenFiles: { urls in
-                        workspaceStore.openFiles(at: urls)
-                    }
-                )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-                    .background(EditorChrome.editorSurface)
-                    .overlay {
-                        EditorSurfaceBorderShape()
-                            .stroke(EditorChrome.border, lineWidth: 1)
-                    }
+                    )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                        .background(EditorChrome.editorSurface)
+                        .overlay {
+                            EditorSurfaceBorderShape()
+                                .stroke(EditorChrome.border, lineWidth: 1)
+                        }
+                }
             } else {
                 Text("No Document Selected")
                     .foregroundColor(.secondary)

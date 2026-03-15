@@ -15,6 +15,13 @@ struct WorkspaceCommands: Commands {
             }
             .keyboardShortcut("t", modifiers: .command)
         }
+        
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings...") {
+                workspaceStore.openSettings()
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
 
         CommandGroup(replacing: .saveItem) {
             Button("Save") {

@@ -37,7 +37,12 @@ final class WorkspaceStore {
     ) {
         self.persistenceService = persistenceService
         self.autoSaveScheduler = autoSaveScheduler
-        createNewDocument()
+        
+        if let state = loadState() {
+            restoreState(state)
+        } else {
+            createNewDocument()
+        }
     }
 
     func createNewDocument() {
@@ -47,6 +52,7 @@ final class WorkspaceStore {
         let newTab = EditorTab(title: newTitle)
         tabs.append(newTab)
         selectedTabID = newTab.id
+        saveState()
     }
 
     func openFiles(at urls: [URL]) {
@@ -79,6 +85,7 @@ final class WorkspaceStore {
         if let targetTabID {
             selectedTabID = targetTabID
         }
+        saveState()
     }
 
     func selectTab(_ id: UUID) {
@@ -88,6 +95,7 @@ final class WorkspaceStore {
 
         saveSelectedDocumentIfNeeded()
         selectedTabID = id
+        saveState()
     }
 
     func saveCurrentDocument() {
@@ -111,15 +119,31 @@ final class WorkspaceStore {
         } else {
             selectedTabID = tabs.last?.id
         }
+        saveState()
+    }
+    
+    func openSettings() {
+        if let existingSettingsTab = tabs.first(where: { $0.isSettings }) {
+            selectTab(existingSettingsTab.id)
+            return
+        }
+        
+        saveSelectedDocumentIfNeeded()
+        
+        let settingsTab = EditorTab(title: "Settings", isSettings: true)
+        tabs.append(settingsTab)
+        selectedTabID = settingsTab.id
+        saveState()
     }
 
     func renameDocument(id: UUID, to newTitle: String) {
-        guard let index = tabs.firstIndex(where: { $0.id == id }) else {
+        guard let index = tabs.firstIndex(where: { $0.id == id }), !tabs[index].isSettings else {
             return
         }
 
         do {
             tabs[index] = try persistenceService.rename(tab: tabs[index], to: newTitle)
+            saveState()
         } catch {
             Self.logger.error("Failed to rename document: \(error.localizedDescription, privacy: .public)")
         }
@@ -158,10 +182,11 @@ final class WorkspaceStore {
     }
     
     func saveDocument(id: UUID) {
-        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        guard let index = tabs.firstIndex(where: { $0.id == id }), !tabs[index].isSettings else { return }
 
         do {
             tabs[index] = try persistenceService.save(tab: tabs[index])
+            saveState()
         } catch {
             Self.logger.error("Failed to save document: \(error.localizedDescription, privacy: .public)")
         }
@@ -178,6 +203,8 @@ final class WorkspaceStore {
     }
 
     func queueAutoSave(for id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }), !tabs[index].isSettings else { return }
+        
         autoSaveScheduler.schedule(for: id) { [weak self] in
             self?.saveDocument(id: id)
         }
@@ -224,6 +251,97 @@ final class WorkspaceStore {
         }
 
         return result
+    }
+
+    // MARK: - State Restoration
+
+    private struct WorkspaceState: Codable {
+        struct TabState: Codable {
+            let fileURL: URL?
+            let isSettings: Bool
+        }
+        let tabs: [TabState]
+        let selectedFileURL: URL?
+        let isSettingsSelected: Bool
+    }
+
+    private static let stateKey = "WorkspaceState"
+
+    private func saveState() {
+        let stateTabs = tabs.map { WorkspaceState.TabState(fileURL: $0.fileURL, isSettings: $0.isSettings) }
+        
+        var selectedFileURL: URL?
+        var isSettingsSelected = false
+        
+        if let selectedTabID {
+            if let tab = tabs.first(where: { $0.id == selectedTabID }) {
+                if tab.isSettings {
+                    isSettingsSelected = true
+                } else {
+                    selectedFileURL = tab.fileURL
+                }
+            }
+        }
+        
+        let state = WorkspaceState(
+            tabs: stateTabs,
+            selectedFileURL: selectedFileURL,
+            isSettingsSelected: isSettingsSelected
+        )
+        
+        do {
+            let data = try JSONEncoder().encode(state)
+            UserDefaults.standard.set(data, forKey: Self.stateKey)
+        } catch {
+            Self.logger.error("Failed to save workspace state: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private func loadState() -> WorkspaceState? {
+        guard let data = UserDefaults.standard.data(forKey: Self.stateKey) else {
+            return nil
+        }
+        
+        do {
+            return try JSONDecoder().decode(WorkspaceState.self, from: data)
+        } catch {
+            Self.logger.error("Failed to load workspace state: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+    }
+
+    private func restoreState(_ state: WorkspaceState) {
+        var restoredSelectedTabID: UUID?
+        
+        for tabState in state.tabs {
+            if tabState.isSettings {
+                let settingsTab = EditorTab(title: "Settings", isSettings: true)
+                tabs.append(settingsTab)
+                if state.isSettingsSelected {
+                    restoredSelectedTabID = settingsTab.id
+                }
+            } else if let fileURL = tabState.fileURL {
+                do {
+                    let openedTab = try persistenceService.openDocument(at: fileURL)
+                    tabs.append(openedTab)
+                    
+                    if let selectedFileURL = state.selectedFileURL,
+                       persistenceService.normalizedFileURL(for: selectedFileURL) == persistenceService.normalizedFileURL(for: fileURL) {
+                        restoredSelectedTabID = openedTab.id
+                    }
+                } catch {
+                    Self.logger.error("Failed to restore document at \(fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+        
+        if tabs.isEmpty {
+            createNewDocument()
+        } else if let restoredSelectedTabID {
+            selectedTabID = restoredSelectedTabID
+        } else {
+            selectedTabID = tabs.first?.id
+        }
     }
 }
 

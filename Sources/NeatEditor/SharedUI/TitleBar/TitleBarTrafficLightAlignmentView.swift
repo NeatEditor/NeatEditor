@@ -69,6 +69,8 @@ final class TrafficLightAlignmentHostingView: NSView {
         centerTrafficLightsIfNeeded()
     }
 
+
+
     func centerTrafficLightsIfNeeded() {
         guard let window,
               let closeButton = window.standardWindowButton(.closeButton),

@@ -25,13 +25,31 @@ struct EditorTabStripView: View {
     let onRenameTab: (UUID, String) -> Void
     @State private var selectedTabFrame: CGRect = .null
     @State private var isWindowPinned = false
+    @State private var editingTabID: UUID? = nil
 
     var body: some View {
         HStack(spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
                     ForEach($tabs) { $tab in
-                        EditorTabItemView(tab: $tab, isSelected: selectedTabID == tab.id) {
+                        EditorTabItemView(
+                            tab: $tab,
+                            isSelected: selectedTabID == tab.id,
+                            isEditing: Binding(
+                                get: { editingTabID == tab.id },
+                                set: { isEditing in
+                                    if isEditing {
+                                        editingTabID = tab.id
+                                    } else if editingTabID == tab.id {
+                                        editingTabID = nil
+                                    }
+                                }
+                            )
+                        ) {
+                            if editingTabID != nil && editingTabID != tab.id {
+                                NSApp.keyWindow?.makeFirstResponder(nil)
+                                editingTabID = nil
+                            }
                             onSelectTab(tab.id)
                         } onRename: { newTitle in
                             onRenameTab(tab.id, newTitle)
@@ -51,6 +69,21 @@ struct EditorTabStripView: View {
         }
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
         .contentShape(Rectangle())
+        .onTapGesture {
+            if editingTabID != nil {
+                NSApp.keyWindow?.makeFirstResponder(nil)
+                editingTabID = nil
+            }
+        }
+        .simultaneousGesture(TapGesture(count: 2).onEnded {
+            let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize"
+            guard action != "None", let window = NSApp.keyWindow else { return }
+            if action == "Maximize" {
+                window.zoom(nil)
+            } else if action == "Minimize" {
+                window.performMiniaturize(nil)
+            }
+        })
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
             selectedTabFrame = frame
         }
@@ -115,11 +148,11 @@ struct EditorTabItemView: View {
 
     @Binding var tab: EditorTab
     let isSelected: Bool
+    @Binding var isEditing: Bool
     let action: () -> Void
     let onRename: (String) -> Void
 
     @State private var isHovering = false
-    @State private var isEditing = false
     @State private var draftTitle = ""
     @FocusState private var isFocused: Bool
 
@@ -142,6 +175,14 @@ struct EditorTabItemView: View {
                                 if !isFocusedValue {
                                     commitTitleEditing()
                                 }
+                            }
+                            .onChange(of: isEditing) { _, isEditingValue in
+                                if !isEditingValue {
+                                    commitTitleEditing()
+                                }
+                            }
+                            .onDisappear {
+                                commitTitleEditing()
                             }
                             .frame(minWidth: 40)
                     } else {
@@ -174,17 +215,19 @@ struct EditorTabItemView: View {
         .onHover { hovering in
             isHovering = hovering
         }
-        .simultaneousGesture(TapGesture(count: 2).onEnded {
+        .onTapGesture(count: 2) {
             draftTitle = tab.title
             isEditing = true
             isFocused = true
-        })
+        }
     }
 
     private func commitTitleEditing() {
         let sanitizedTitle = sanitizedTitle(from: draftTitle)
         if !sanitizedTitle.isEmpty {
-            onRename(sanitizedTitle)
+            DispatchQueue.main.async {
+                onRename(sanitizedTitle)
+            }
         }
 
         draftTitle = tab.title

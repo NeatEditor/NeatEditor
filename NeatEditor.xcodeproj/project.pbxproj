@@ -19,6 +19,7 @@
 		4A7455D8ED46B4FC817A58B3 /* EditorChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */; };
 		4C6DD29CD0452D9311044BE8 /* EditorTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC9CB3A37D479100CB1B9D6 /* EditorTextView.swift */; };
 		6C4A4EF55D4E956B1CB30509 /* DocumentPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */; };
+		85E7BB7174B4D000CEFDE8A6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */; };
 		A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */; };
 		AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */; };
 		B94CDB60C07A6AB1960668D4 /* ExternalFileOpenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */; };
@@ -39,6 +40,7 @@
 		7FC9CB3A37D479100CB1B9D6 /* EditorTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextView.swift; sourceTree = "<group>"; };
 		997F47F5D36FCDF06285DFAB /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableScrollView.swift; sourceTree = "<group>"; };
 		9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextContainerView.swift; sourceTree = "<group>"; };
+		9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPersistenceService.swift; sourceTree = "<group>"; };
 		BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		C59982890BA0049E8CC31E4F /* NeatEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeatEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -54,6 +56,7 @@
 			children = (
 				CEE07E7303361F05267B1085 /* EditorTab.swift */,
 				60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */,
+				9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */,
 				63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */,
 				BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */,
 			);
@@ -250,6 +253,7 @@
 				B94CDB60C07A6AB1960668D4 /* ExternalFileOpenCoordinator.swift in Sources */,
 				260FB1D768B914BEC7E705CE /* LineNumberGutterView.swift in Sources */,
 				28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */,
+				85E7BB7174B4D000CEFDE8A6 /* SettingsView.swift in Sources */,
 				A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */,
 				16EC1F059C67919FE7417ECA /* WorkspaceCommands.swift in Sources */,
 				DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */,
