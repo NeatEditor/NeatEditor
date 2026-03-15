@@ -3,13 +3,18 @@ import SwiftUI
 
 struct TitleBarTrafficLightAlignmentView: NSViewRepresentable {
     let titleBarHeight: CGFloat
+    let isWindowPinned: Bool
 
     func makeNSView(context: Context) -> TrafficLightAlignmentHostingView {
-        TrafficLightAlignmentHostingView(titleBarHeight: titleBarHeight)
+        TrafficLightAlignmentHostingView(
+            titleBarHeight: titleBarHeight,
+            isWindowPinned: isWindowPinned
+        )
     }
 
     func updateNSView(_ nsView: TrafficLightAlignmentHostingView, context: Context) {
         nsView.titleBarHeight = titleBarHeight
+        nsView.isWindowPinned = isWindowPinned
         nsView.centerTrafficLightsIfNeeded()
     }
 }
@@ -20,9 +25,15 @@ final class TrafficLightAlignmentHostingView: NSView {
             centerTrafficLightsIfNeeded()
         }
     }
+    var isWindowPinned: Bool {
+        didSet {
+            applyWindowPinningIfNeeded()
+        }
+    }
 
-    init(titleBarHeight: CGFloat) {
+    init(titleBarHeight: CGFloat, isWindowPinned: Bool) {
         self.titleBarHeight = titleBarHeight
+        self.isWindowPinned = isWindowPinned
         super.init(frame: .zero)
     }
 
@@ -35,6 +46,7 @@ final class TrafficLightAlignmentHostingView: NSView {
         super.viewDidMoveToWindow()
         configureWindowObserver()
         centerTrafficLightsIfNeeded()
+        applyWindowPinningIfNeeded()
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
@@ -44,6 +56,9 @@ final class TrafficLightAlignmentHostingView: NSView {
                 name: NSWindow.didResizeNotification,
                 object: window
             )
+            if window != newWindow {
+                window.level = .normal
+            }
         }
 
         super.viewWillMove(toWindow: newWindow)
@@ -98,5 +113,18 @@ final class TrafficLightAlignmentHostingView: NSView {
     @objc
     private func handleWindowDidResize() {
         centerTrafficLightsIfNeeded()
+    }
+
+    private func applyWindowPinningIfNeeded() {
+        guard let window else {
+            return
+        }
+
+        let targetLevel: NSWindow.Level = isWindowPinned ? .floating : .normal
+        guard window.level != targetLevel else {
+            return
+        }
+
+        window.level = targetLevel
     }
 }

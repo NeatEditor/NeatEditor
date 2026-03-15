@@ -25,6 +25,7 @@ struct EditorTextView: NSViewRepresentable {
 
         textView.delegate = context.coordinator
         textView.string = text
+        containerView.applyEditorTextAttributes()
         textView.onCompositionEnd = {
             [weak containerView, weak coordinator = context.coordinator, weak textView] in
             guard let containerView, let coordinator, let textView else {
@@ -48,6 +49,7 @@ struct EditorTextView: NSViewRepresentable {
             context.coordinator.isSyncingFromSwiftUI = true
             containerView.textView.string = text
             context.coordinator.isSyncingFromSwiftUI = false
+            containerView.applyEditorTextAttributes()
             containerView.refreshLineNumbers()
         }
 

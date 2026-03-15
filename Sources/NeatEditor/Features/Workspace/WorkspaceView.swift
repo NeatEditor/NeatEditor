@@ -88,7 +88,7 @@ struct WorkspaceView: View {
             .disabled(isSearchActionDisabled)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 6)
         .background(EditorChrome.tabBarBackground)
         .overlay(alignment: .top) {
             Rectangle()

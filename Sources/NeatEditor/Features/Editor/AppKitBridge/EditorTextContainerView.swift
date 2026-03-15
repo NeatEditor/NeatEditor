@@ -3,6 +3,13 @@ import AppKit
 final class EditorTextContainerView: NSView {
     let textView: ZoomableTextView
 
+    private static let editorLineHeightMultiple: CGFloat = 1.08
+    private static let preferredEditorFontNames = [
+        ".SF NS Mono Regular",
+        "SFMono-Regular",
+        "SF Mono Regular"
+    ]
+
     var onIncreaseFontSize: () -> Void {
         didSet {
             scrollView.onIncreaseFontSize = onIncreaseFontSize
@@ -82,12 +89,31 @@ final class EditorTextContainerView: NSView {
     }
 
     func applyFontSize(_ fontSize: CGFloat) {
-        guard textView.font?.pointSize != fontSize else {
+        let font = Self.editorFont(ofSize: fontSize)
+        let didChangeFont = textView.font?.fontName != font.fontName
+            || textView.font?.pointSize != font.pointSize
+
+        if didChangeFont {
+            textView.font = font
+            applyEditorTextAttributes()
+            refreshLineNumbers()
+        } else {
+            applyDefaultTypingAttributes(using: font)
+        }
+    }
+
+    func applyEditorTextAttributes() {
+        let font = textView.font ?? Self.editorFont(ofSize: NSFont.systemFontSize)
+        applyDefaultTypingAttributes(using: font)
+
+        guard let textStorage = textView.textStorage, textStorage.length > 0 else {
             return
         }
 
-        textView.font = .monospacedSystemFont(ofSize: fontSize, weight: .regular)
-        textView.typingAttributes[.font] = textView.font
+        let fullRange = NSRange(location: 0, length: textStorage.length)
+        textStorage.beginEditing()
+        textStorage.addAttributes(Self.editorTextAttributes(using: font), range: fullRange)
+        textStorage.endEditing()
         refreshLineNumbers()
     }
 
@@ -148,7 +174,7 @@ final class EditorTextContainerView: NSView {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.isAutomaticDataDetectionEnabled = false
-        textView.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+        textView.font = Self.editorFont(ofSize: NSFont.systemFontSize)
         textView.textColor = .labelColor
         textView.backgroundColor = .controlBackgroundColor
         textView.insertionPointColor = .labelColor
@@ -162,6 +188,7 @@ final class EditorTextContainerView: NSView {
         )
         textView.minSize = NSSize(width: 0, height: 0)
         textView.autoresizingMask = [.width]
+        applyDefaultTypingAttributes(using: textView.font ?? Self.editorFont(ofSize: NSFont.systemFontSize))
 
         if let textContainer = textView.textContainer {
             textContainer.widthTracksTextView = true
@@ -170,6 +197,36 @@ final class EditorTextContainerView: NSView {
                 height: CGFloat.greatestFiniteMagnitude
             )
         }
+    }
+
+    private static func editorFont(ofSize size: CGFloat) -> NSFont {
+        for fontName in preferredEditorFontNames {
+            if let font = NSFont(name: fontName, size: size) {
+                return font
+            }
+        }
+
+        return .monospacedSystemFont(ofSize: size, weight: .regular)
+    }
+
+    private func applyDefaultTypingAttributes(using font: NSFont) {
+        let paragraphStyle = Self.editorParagraphStyle()
+        textView.defaultParagraphStyle = paragraphStyle
+        textView.typingAttributes[.font] = font
+        textView.typingAttributes[.paragraphStyle] = paragraphStyle
+    }
+
+    private static func editorParagraphStyle() -> NSParagraphStyle {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = editorLineHeightMultiple
+        return paragraphStyle
+    }
+
+    private static func editorTextAttributes(using font: NSFont) -> [NSAttributedString.Key: Any] {
+        [
+            .font: font,
+            .paragraphStyle: editorParagraphStyle()
+        ]
     }
 
     private func configureScrollView() {

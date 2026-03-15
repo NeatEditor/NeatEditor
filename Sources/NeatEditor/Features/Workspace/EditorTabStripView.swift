@@ -8,22 +8,32 @@ struct EditorTabStripView: View {
     let selectedTabID: UUID?
     let onSelectTab: (UUID) -> Void
     @State private var selectedTabFrame: CGRect = .null
+    @State private var isWindowPinned = false
 
     // Window control buttons width + padding to ensure tabs don't overlap traffic lights
     private let leadingPadding: CGFloat = 76
+    private let trailingAccessoryWidth: CGFloat = 48
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                ForEach($tabs) { $tab in
-                    EditorTabItemView(tab: $tab, isSelected: selectedTabID == tab.id) {
-                        onSelectTab(tab.id)
+        HStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach($tabs) { $tab in
+                        EditorTabItemView(tab: $tab, isSelected: selectedTabID == tab.id) {
+                            onSelectTab(tab.id)
+                        }
                     }
                 }
+                .padding(.leading, leadingPadding)
+                .padding(.trailing, 12)
+                .padding(.top, 6)
             }
-            .padding(.leading, leadingPadding)
-            .padding(.trailing, 16)
-            .padding(.top, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            PinWindowButton(isWindowPinned: $isWindowPinned)
+                .frame(width: trailingAccessoryWidth)
+                .padding(.trailing, 6)
+                .padding(.top, 4)
         }
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
@@ -36,9 +46,39 @@ struct EditorTabStripView: View {
             }
         }
         .background {
-            TitleBarTrafficLightAlignmentView(titleBarHeight: Self.titleBarHeight)
+            TitleBarTrafficLightAlignmentView(
+                titleBarHeight: Self.titleBarHeight,
+                isWindowPinned: isWindowPinned
+            )
         }
         .frame(height: Self.titleBarHeight)
+    }
+}
+
+private struct PinWindowButton: View {
+    @Binding var isWindowPinned: Bool
+    @State private var isHovering = false
+
+    var body: some View {
+        Button {
+            isWindowPinned.toggle()
+        } label: {
+            Image(systemName: isWindowPinned ? "pin.fill" : "pin")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(isWindowPinned ? Color.accentColor : Color.secondary)
+                .frame(width: 28, height: 28)
+                .background {
+                    Circle()
+                        .fill(isHovering || isWindowPinned ? EditorChrome.hoverFill : .clear)
+                }
+        }
+        .buttonStyle(.plain)
+        .contentShape(Circle())
+        .help(isWindowPinned ? "Disable Always on Top" : "Enable Always on Top")
+        .accessibilityLabel(isWindowPinned ? "Disable Always on Top" : "Enable Always on Top")
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
 }
 
