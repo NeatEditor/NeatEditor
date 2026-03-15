@@ -31,10 +31,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.geraltgraham.NeatEditor
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 geraltgraham. All rights reserved."
-        INFOPLIST_KEY_CFBundleDisplayName: NeatEditor
-        INFOPLIST_KEY_LSMinimumSystemVersion: "15.0"
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/NeatEditor/App/Info.plist
         SWIFT_VERSION: 6.0
         MACOSX_DEPLOYMENT_TARGET: "15.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

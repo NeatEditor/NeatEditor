@@ -162,6 +162,7 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - 当前选中文档由 `DocumentManager.selectedTabID` 驱动。
 - 自动保存由 `DocumentManager.queueAutoSave(for:)` 负责，采用 2 秒 debounce。
 - 切换标签时会保存旧标签；应用转入 inactive/background 时会保存全部文档。
+- 空白内容（包括仅空白字符）不落盘是当前产品约定；触碰保存逻辑时不要把“清空文档后未覆盖磁盘文件”当作 bug 修掉，README 与实现需保持一致。
 - 触碰这些逻辑时，要连同保存时机一起验证，不要只看 UI 是否能显示。
 
 ## Agent 工作方式

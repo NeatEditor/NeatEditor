@@ -11,6 +11,7 @@ struct EditorTextView: NSViewRepresentable {
     let onCompositionEnd: () -> Void
     let onIncreaseFontSize: () -> Void
     let onDecreaseFontSize: () -> Void
+    let onOpenFiles: ([URL]) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -25,6 +26,7 @@ struct EditorTextView: NSViewRepresentable {
 
         textView.delegate = context.coordinator
         textView.string = text
+        textView.onOpenFiles = onOpenFiles
         containerView.applyEditorTextAttributes()
         textView.onCompositionEnd = {
             [weak containerView, weak coordinator = context.coordinator, weak textView] in
@@ -44,6 +46,7 @@ struct EditorTextView: NSViewRepresentable {
         context.coordinator.parent = self
         containerView.onIncreaseFontSize = onIncreaseFontSize
         containerView.onDecreaseFontSize = onDecreaseFontSize
+        containerView.textView.onOpenFiles = onOpenFiles
 
         if !containerView.textView.hasMarkedText() && containerView.textView.string != text {
             context.coordinator.isSyncingFromSwiftUI = true

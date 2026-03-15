@@ -9,6 +9,15 @@ final class ZoomableTextView: NSTextView {
     var onIncreaseFontSize: () -> Void = {}
     var onDecreaseFontSize: () -> Void = {}
     var onCompositionEnd: () -> Void = {}
+    var onOpenFiles: ([URL]) -> Void = { _ in }
+
+    override var readablePasteboardTypes: [NSPasteboard.PasteboardType] {
+        prioritizedPasteboardTypes(from: super.readablePasteboardTypes)
+    }
+
+    override var acceptableDragTypes: [NSPasteboard.PasteboardType] {
+        prioritizedPasteboardTypes(from: super.acceptableDragTypes)
+    }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if handleZoomShortcut(for: event) {
@@ -33,6 +42,35 @@ final class ZoomableTextView: NSTextView {
         if wasComposing {
             onCompositionEnd()
         }
+    }
+
+    override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
+        if type == .fileURL,
+           let urls = pboard.readObjects(forClasses: [NSURL.self]) as? [URL],
+           !urls.isEmpty {
+            onOpenFiles(urls)
+            return true
+        }
+
+        return super.readSelection(from: pboard, type: type)
+    }
+
+    override func preferredPasteboardType(
+        from availableTypes: [NSPasteboard.PasteboardType],
+        restrictedToTypesFrom allowedTypes: [NSPasteboard.PasteboardType]? = nil
+    ) -> NSPasteboard.PasteboardType? {
+        let allowedTypes = allowedTypes ?? []
+        let canUseFileURL = availableTypes.contains(.fileURL)
+            && (allowedTypes.isEmpty || allowedTypes.contains(.fileURL))
+
+        if canUseFileURL {
+            return .fileURL
+        }
+
+        return super.preferredPasteboardType(
+            from: availableTypes,
+            restrictedToTypesFrom: allowedTypes.isEmpty ? nil : allowedTypes
+        )
     }
 
     private func handleZoomShortcut(for event: NSEvent) -> Bool {
@@ -67,5 +105,13 @@ final class ZoomableTextView: NSTextView {
         default:
             return false
         }
+    }
+
+    private func prioritizedPasteboardTypes(
+        from types: [NSPasteboard.PasteboardType]
+    ) -> [NSPasteboard.PasteboardType] {
+        var prioritizedTypes = [NSPasteboard.PasteboardType.fileURL]
+        prioritizedTypes.append(contentsOf: types.filter { $0 != .fileURL })
+        return prioritizedTypes
     }
 }

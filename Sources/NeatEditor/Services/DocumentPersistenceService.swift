@@ -28,6 +28,21 @@ struct DocumentPersistenceService {
         return savedTab
     }
 
+    func openDocument(at fileURL: URL) throws -> EditorTab {
+        let normalizedFileURL = normalizedFileURL(for: fileURL)
+        let content = try String(contentsOf: normalizedFileURL, encoding: .utf8)
+
+        return EditorTab(
+            title: normalizedFileURL.deletingPathExtension().lastPathComponent,
+            content: content,
+            fileURL: normalizedFileURL
+        )
+    }
+
+    func normalizedFileURL(for fileURL: URL) -> URL {
+        fileURL.standardizedFileURL.resolvingSymlinksInPath()
+    }
+
     func nextUntitledName(existingTabs: [EditorTab]) -> String {
         var maxN = 0
         let baseName = "Untitled"

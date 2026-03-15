@@ -49,6 +49,38 @@ final class WorkspaceStore {
         selectedTabID = newTab.id
     }
 
+    func openFiles(at urls: [URL]) {
+        let fileURLs = uniqueFileURLs(from: urls)
+        guard !fileURLs.isEmpty else {
+            return
+        }
+
+        saveSelectedDocumentIfNeeded()
+
+        var targetTabID: UUID?
+
+        for fileURL in fileURLs {
+            if let existingTabID = existingTabID(for: fileURL) {
+                targetTabID = existingTabID
+                continue
+            }
+
+            do {
+                let openedTab = try persistenceService.openDocument(at: fileURL)
+                tabs.append(openedTab)
+                targetTabID = openedTab.id
+            } catch {
+                Self.logger.error(
+                    "Failed to open document at \(fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
+            }
+        }
+
+        if let targetTabID {
+            selectedTabID = targetTabID
+        }
+    }
+
     func selectTab(_ id: UUID) {
         guard selectedTabID != id else {
             return
@@ -92,6 +124,10 @@ final class WorkspaceStore {
     func presentSearchBar() {
         isSearchBarPresented = true
         searchFocusRequestID += 1
+    }
+
+    func dismissSearchBar() {
+        isSearchBarPresented = false
     }
 
     func submitSearch() {
@@ -150,6 +186,32 @@ final class WorkspaceStore {
         if let selectedTabID {
             saveDocument(id: selectedTabID)
         }
+    }
+
+    private func existingTabID(for fileURL: URL) -> UUID? {
+        let normalizedFileURL = persistenceService.normalizedFileURL(for: fileURL)
+
+        return tabs.first {
+            guard let tabFileURL = $0.fileURL else {
+                return false
+            }
+
+            return persistenceService.normalizedFileURL(for: tabFileURL) == normalizedFileURL
+        }?.id
+    }
+
+    private func uniqueFileURLs(from urls: [URL]) -> [URL] {
+        var seen = Set<URL>()
+        var result: [URL] = []
+
+        for url in urls where url.isFileURL {
+            let normalizedFileURL = persistenceService.normalizedFileURL(for: url)
+            if seen.insert(normalizedFileURL).inserted {
+                result.append(normalizedFileURL)
+            }
+        }
+
+        return result
     }
 }
 

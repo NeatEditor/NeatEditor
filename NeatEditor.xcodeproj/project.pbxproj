@@ -21,6 +21,7 @@
 		6C4A4EF55D4E956B1CB30509 /* DocumentPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */; };
 		A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */; };
 		AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */; };
+		B94CDB60C07A6AB1960668D4 /* ExternalFileOpenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */; };
 		DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */; };
 		F9F0759B221E03E66297E6D5 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */; };
 /* End PBXBuildFile section */
@@ -29,6 +30,7 @@
 		0CA0DD15623CA315741B803E /* ZoomableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableTextView.swift; sourceTree = "<group>"; };
 		0CF0D55E27675FFDA411D699 /* LineNumberGutterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberGutterView.swift; sourceTree = "<group>"; };
 		14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSaveScheduler.swift; sourceTree = "<group>"; };
+		32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalFileOpenCoordinator.swift; sourceTree = "<group>"; };
 		3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleBarTrafficLightAlignmentView.swift; sourceTree = "<group>"; };
 		60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTabStripView.swift; sourceTree = "<group>"; };
 		63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStore.swift; sourceTree = "<group>"; };
@@ -43,6 +45,7 @@
 		CC4981C6B05519CD1877B4D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CEE07E7303361F05267B1085 /* EditorTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTab.swift; sourceTree = "<group>"; };
 		D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorChrome.swift; sourceTree = "<group>"; };
+		FF4DB92AF9B1A147AEED3F20 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -61,6 +64,8 @@
 			isa = PBXGroup;
 			children = (
 				BD11E00755412FD8FBA19523 /* Commands */,
+				32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */,
+				FF4DB92AF9B1A147AEED3F20 /* Info.plist */,
 				7AE177253A6D16097E143352 /* NeatEditorApp.swift */,
 			);
 			path = App;
@@ -242,6 +247,7 @@
 				44208CD4C131FC71C34946E1 /* EditorTabStripView.swift in Sources */,
 				40E4B08329E49913ADF40EFC /* EditorTextContainerView.swift in Sources */,
 				4C6DD29CD0452D9311044BE8 /* EditorTextView.swift in Sources */,
+				B94CDB60C07A6AB1960668D4 /* ExternalFileOpenCoordinator.swift in Sources */,
 				260FB1D768B914BEC7E705CE /* LineNumberGutterView.swift in Sources */,
 				28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */,
 				A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */,
@@ -261,10 +267,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = NeatEditor;
-				INFOPLIST_KEY_LSMinimumSystemVersion = 15.0;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 geraltgraham. All rights reserved.";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/NeatEditor/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -340,10 +344,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = NeatEditor;
-				INFOPLIST_KEY_LSMinimumSystemVersion = 15.0;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 geraltgraham. All rights reserved.";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/NeatEditor/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

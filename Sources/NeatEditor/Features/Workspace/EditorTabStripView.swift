@@ -36,6 +36,7 @@ struct EditorTabStripView: View {
                 .padding(.top, 4)
         }
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
+        .contentShape(Rectangle())
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
             selectedTabFrame = frame
         }
@@ -84,6 +85,7 @@ private struct PinWindowButton: View {
 
 struct EditorTabItemView: View {
     private static let titleFontSize: CGFloat = 13
+    private static let invalidTitleSeparators = CharacterSet(charactersIn: "/:")
     private static let minimumHorizontalPadding: CGFloat = textWidth(for: "untit")
     private static let minimumTabWidth: CGFloat = {
         let titleWidth = textWidth(for: "untitleduntitled")
@@ -103,6 +105,7 @@ struct EditorTabItemView: View {
 
     @State private var isHovering = false
     @State private var isEditing = false
+    @State private var draftTitle = ""
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -112,17 +115,17 @@ struct EditorTabItemView: View {
 
                 HStack(spacing: 6) {
                     if isEditing {
-                        TextField("", text: $tab.title)
+                        TextField("", text: $draftTitle)
                             .textFieldStyle(.plain)
                             .font(.system(size: Self.titleFontSize, weight: isSelected ? .medium : .regular))
                             .focused($isFocused)
                             .labelsHidden()
                             .onSubmit {
-                                isEditing = false
+                                commitTitleEditing()
                             }
                             .onChange(of: isFocused) { _, isFocusedValue in
                                 if !isFocusedValue {
-                                    isEditing = false
+                                    commitTitleEditing()
                                 }
                             }
                             .frame(minWidth: 40)
@@ -142,6 +145,9 @@ struct EditorTabItemView: View {
         }
         .buttonStyle(.plain)
         .zIndex(isSelected ? 1 : 0)
+        .onAppear {
+            draftTitle = tab.title
+        }
         .background {
             GeometryReader { proxy in
                 Color.clear.preference(
@@ -154,9 +160,39 @@ struct EditorTabItemView: View {
             isHovering = hovering
         }
         .simultaneousGesture(TapGesture(count: 2).onEnded {
+            draftTitle = tab.title
             isEditing = true
             isFocused = true
         })
+    }
+
+    private func commitTitleEditing() {
+        let sanitizedTitle = sanitizedTitle(from: draftTitle)
+        if !sanitizedTitle.isEmpty {
+            tab.title = sanitizedTitle
+        }
+
+        draftTitle = tab.title
+        isEditing = false
+    }
+
+    private func sanitizedTitle(from rawTitle: String) -> String {
+        let trimmedTitle = rawTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else {
+            return ""
+        }
+
+        let components = trimmedTitle.components(separatedBy: Self.invalidTitleSeparators)
+        let separatorSafeTitle = components.joined(separator: "-")
+        let singleLineTitle = separatorSafeTitle
+            .replacingOccurrences(of: "\r", with: " ")
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\t", with: " ")
+        let collapsedWhitespaceTitle = singleLineTitle
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+
+        return collapsedWhitespaceTitle.trimmingCharacters(in: CharacterSet(charactersIn: ". "))
     }
 
     @ViewBuilder

@@ -11,13 +11,15 @@ final class LineNumberGutterView: NSView {
 
     private weak var scrollView: NSScrollView?
     private weak var textView: NSTextView?
+    private var lineStartIndices = [0]
+    private var cachedLineCount = 1
 
     override var isFlipped: Bool {
         true
     }
 
     var requiredWidth: CGFloat {
-        let digits = max(Metrics.minimumDigits, String(totalLineCount).count)
+        let digits = max(Metrics.minimumDigits, String(cachedLineCount).count)
         let sample = String(repeating: "8", count: digits) as NSString
         let width = ceil(sample.size(withAttributes: textAttributes).width)
         return Metrics.leftPadding + width + Metrics.rightPadding
@@ -28,6 +30,7 @@ final class LineNumberGutterView: NSView {
         self.textView = textView
         super.init(frame: .zero)
         wantsLayer = true
+        rebuildLineMetrics()
         updateColors()
         registerObservers(scrollView: scrollView, textView: textView)
     }
@@ -124,13 +127,14 @@ final class LineNumberGutterView: NSView {
             let extraRect = layoutManager.extraLineFragmentRect
             if !extraRect.isEmpty {
                 let y = extraRect.minY + textView.textContainerInset.height - visibleRect.minY
-                drawLineNumber(totalLineCount, atY: y, lineHeight: extraRect.height)
+                drawLineNumber(cachedLineCount, atY: y, lineHeight: extraRect.height)
             }
         }
     }
 
     @objc
     private func handleTextDidChange() {
+        rebuildLineMetrics()
         needsDisplay = true
         superview.flatMap { $0 as? EditorTextContainerView }?.refreshLineNumbers()
     }
@@ -165,16 +169,39 @@ final class LineNumberGutterView: NSView {
         )
     }
 
-    private var totalLineCount: Int {
+    private func rebuildLineMetrics() {
         guard let textView else {
-            return 1
+            lineStartIndices = [0]
+            cachedLineCount = 1
+            return
         }
 
-        return max(1, textView.string.reduce(into: 1) { count, character in
-            if character == "\n" {
-                count += 1
+        let string = textView.string as NSString
+        guard string.length > 0 else {
+            lineStartIndices = [0]
+            cachedLineCount = 1
+            return
+        }
+
+        var updatedLineStartIndices = [0]
+        var searchRange = NSRange(location: 0, length: string.length)
+
+        while searchRange.length > 0 {
+            let matchRange = string.range(of: "\n", options: [], range: searchRange)
+            guard matchRange.location != NSNotFound else {
+                break
             }
-        })
+
+            let nextLineStartIndex = matchRange.location + matchRange.length
+            updatedLineStartIndices.append(nextLineStartIndex)
+            searchRange = NSRange(
+                location: nextLineStartIndex,
+                length: string.length - nextLineStartIndex
+            )
+        }
+
+        lineStartIndices = updatedLineStartIndices
+        cachedLineCount = max(1, updatedLineStartIndices.count)
     }
 
     private var textAttributes: [NSAttributedString.Key: Any] {
@@ -229,11 +256,19 @@ final class LineNumberGutterView: NSView {
             return 1
         }
 
-        let prefix = string.substring(to: min(characterIndex, string.length))
-        return prefix.reduce(into: 1) { count, character in
-            if character == "\n" {
-                count += 1
+        let safeCharacterIndex = min(characterIndex, string.length)
+        var low = 0
+        var high = lineStartIndices.count
+
+        while low < high {
+            let mid = (low + high) / 2
+            if lineStartIndices[mid] <= safeCharacterIndex {
+                low = mid + 1
+            } else {
+                high = mid
             }
         }
+
+        return max(1, low)
     }
 }
