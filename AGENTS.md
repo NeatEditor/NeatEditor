@@ -164,6 +164,9 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 ## 与当前代码保持一致的实现提示
 - 文档标签页由 `EditorTab` 建模，集中存放在 `WorkspaceStore.tabs`。
 - 当前选中文档由 `WorkspaceStore.selectedTabID` 驱动。
+- 标签栏手势通过 `TitleBarEventMonitor` (AppKit `NSEvent` 局部监听) 实现，以绕过 SwiftUI `TapGesture` 导致的 ~250ms 点击延迟。
+- 标签双击重命名使用 `NSEvent.doubleClickInterval` 手动判定，并配合文件级标志位 `tabStripSuppressNextZoom` 防止同时触发窗口缩放。
+- 重命名编辑模式通过 `tabStripPendingRename` 在视图销毁前同步状态，确保点击外部区域或应用失去焦点时能正确保存并退出。
 - 自动保存由 `WorkspaceStore.queueAutoSave(for:)` 触发，底层通过 `AutoSaveScheduler` 做 2 秒 debounce。
 - 新建标签前、切换标签时、关闭当前标签时，都会先保存当前选中文档。
 - 外部文件打开入口由 `ExternalFileOpenCoordinator` 接入，实际打开逻辑集中在 `WorkspaceStore.openFiles(at:)`。
