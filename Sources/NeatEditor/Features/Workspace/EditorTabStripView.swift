@@ -7,6 +7,7 @@ struct EditorTabStripView: View {
     @Binding var tabs: [EditorTab]
     let selectedTabID: UUID?
     let onSelectTab: (UUID) -> Void
+    let onRenameTab: (UUID, String) -> Void
     @State private var selectedTabFrame: CGRect = .null
     @State private var isWindowPinned = false
 
@@ -21,6 +22,8 @@ struct EditorTabStripView: View {
                     ForEach($tabs) { $tab in
                         EditorTabItemView(tab: $tab, isSelected: selectedTabID == tab.id) {
                             onSelectTab(tab.id)
+                        } onRename: { newTitle in
+                            onRenameTab(tab.id, newTitle)
                         }
                     }
                 }
@@ -102,6 +105,7 @@ struct EditorTabItemView: View {
     @Binding var tab: EditorTab
     let isSelected: Bool
     let action: () -> Void
+    let onRename: (String) -> Void
 
     @State private var isHovering = false
     @State private var isEditing = false
@@ -169,7 +173,7 @@ struct EditorTabItemView: View {
     private func commitTitleEditing() {
         let sanitizedTitle = sanitizedTitle(from: draftTitle)
         if !sanitizedTitle.isEmpty {
-            tab.title = sanitizedTitle
+            onRename(sanitizedTitle)
         }
 
         draftTitle = tab.title
@@ -367,7 +371,14 @@ private struct ConnectedTabBorderShape: Shape {
         EditorTabStripView(
             tabs: $tabs,
             selectedTabID: selectedTabID,
-            onSelectTab: { selectedTabID = $0 }
+            onSelectTab: { selectedTabID = $0 },
+            onRenameTab: { id, newTitle in
+                guard let index = tabs.firstIndex(where: { $0.id == id }) else {
+                    return
+                }
+
+                tabs[index].title = newTitle
+            }
         )
         Spacer()
     }

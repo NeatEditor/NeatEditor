@@ -4,11 +4,7 @@ final class EditorTextContainerView: NSView {
     let textView: ZoomableTextView
 
     private static let editorLineHeightMultiple: CGFloat = 1.08
-    private static let preferredEditorFontNames = [
-        ".SF NS Mono Regular",
-        "SFMono-Regular",
-        "SF Mono Regular"
-    ]
+    private var currentEditorFontSize: CGFloat = NSFont.systemFontSize
 
     var onIncreaseFontSize: () -> Void {
         didSet {
@@ -35,6 +31,8 @@ final class EditorTextContainerView: NSView {
 
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
+        updateTextViewColors()
+        applyEditorTextAttributes()
         updateSeparatorColor()
         lineNumberView.updateColors()
     }
@@ -89,32 +87,105 @@ final class EditorTextContainerView: NSView {
     }
 
     func applyFontSize(_ fontSize: CGFloat) {
-        let font = Self.editorFont(ofSize: fontSize)
+        currentEditorFontSize = fontSize
+        let font = editorMonospacedFont()
         let didChangeFont = textView.font?.fontName != font.fontName
             || textView.font?.pointSize != font.pointSize
 
         if didChangeFont {
             textView.font = font
             applyEditorTextAttributes()
-            refreshLineNumbers()
         } else {
             applyDefaultTypingAttributes(using: font)
         }
     }
 
     func applyEditorTextAttributes() {
-        let font = textView.font ?? Self.editorFont(ofSize: NSFont.systemFontSize)
-        applyDefaultTypingAttributes(using: font)
+        let monospacedFont = editorMonospacedFont()
+        let defaultFont = Self.defaultEditorFont(ofSize: monospacedFont.pointSize)
+        applyDefaultTypingAttributes(using: monospacedFont)
 
         guard let textStorage = textView.textStorage, textStorage.length > 0 else {
             return
         }
 
         let fullRange = NSRange(location: 0, length: textStorage.length)
+        let paragraphStyle = Self.editorParagraphStyle()
+        let foregroundColor = Self.editorForegroundColor()
         textStorage.beginEditing()
-        textStorage.addAttributes(Self.editorTextAttributes(using: font), range: fullRange)
+        textStorage.setAttributes(
+            [
+                .font: defaultFont,
+                .paragraphStyle: paragraphStyle,
+                .foregroundColor: foregroundColor
+            ],
+            range: fullRange
+        )
+
+        let string = textStorage.string
+        var runStart = string.startIndex
+
+        while runStart < string.endIndex {
+            let isMonospacedRun = Self.shouldUseMonospacedFont(for: string[runStart])
+            var runEnd = string.index(after: runStart)
+
+            while runEnd < string.endIndex,
+                  Self.shouldUseMonospacedFont(for: string[runEnd]) == isMonospacedRun {
+                runEnd = string.index(after: runEnd)
+            }
+
+            if isMonospacedRun {
+                textStorage.addAttribute(
+                    .font,
+                    value: monospacedFont,
+                    range: NSRange(runStart..<runEnd, in: string)
+                )
+            }
+
+            runStart = runEnd
+        }
+
         textStorage.endEditing()
         refreshLineNumbers()
+    }
+
+    func enforceEditorTextAttributesIfNeeded() {
+        let font = editorMonospacedFont()
+        applyDefaultTypingAttributes(using: font)
+
+        guard let textStorage = textView.textStorage, textStorage.length > 0 else {
+            return
+        }
+
+        let attributes = textStorage.attributes(at: 0, effectiveRange: nil)
+        let currentFont = attributes[.font] as? NSFont
+        let currentParagraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle
+        let needsFontRefresh = currentFont?.fontName != font.fontName
+            || currentFont?.pointSize != font.pointSize
+        let needsParagraphRefresh = currentParagraphStyle?.lineHeightMultiple
+            != Self.editorLineHeightMultiple
+
+        guard needsFontRefresh || needsParagraphRefresh else {
+            return
+        }
+
+        applyEditorTextAttributes()
+    }
+
+    func prepareTypingAttributes(for replacementString: String?) {
+        let pointSize = currentEditorFontSize
+        let font: NSFont
+
+        if let firstCharacter = replacementString?.first,
+           Self.shouldUseMonospacedFont(for: firstCharacter) {
+            font = Self.editorFont(ofSize: pointSize)
+        } else if replacementString?.isEmpty == false {
+            font = Self.defaultEditorFont(ofSize: pointSize)
+        } else {
+            font = Self.editorFont(ofSize: pointSize)
+        }
+
+        applyDefaultTypingAttributes(using: font)
     }
 
     func performSearch(for query: String) {
@@ -164,9 +235,10 @@ final class EditorTextContainerView: NSView {
     }
 
     private func configureTextView() {
+        currentEditorFontSize = NSFont.systemFontSize
         textView.isEditable = true
         textView.isSelectable = true
-        textView.isRichText = false
+        textView.isRichText = true
         textView.importsGraphics = false
         textView.usesFindPanel = true
         textView.allowsUndo = true
@@ -174,10 +246,7 @@ final class EditorTextContainerView: NSView {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.isAutomaticDataDetectionEnabled = false
-        textView.font = Self.editorFont(ofSize: NSFont.systemFontSize)
-        textView.textColor = .labelColor
-        textView.backgroundColor = .controlBackgroundColor
-        textView.insertionPointColor = .labelColor
+        textView.font = editorMonospacedFont()
         textView.drawsBackground = true
         textView.textContainerInset = NSSize(width: 8, height: 8)
         textView.isHorizontallyResizable = false
@@ -188,7 +257,8 @@ final class EditorTextContainerView: NSView {
         )
         textView.minSize = NSSize(width: 0, height: 0)
         textView.autoresizingMask = [.width]
-        applyDefaultTypingAttributes(using: textView.font ?? Self.editorFont(ofSize: NSFont.systemFontSize))
+        updateTextViewColors()
+        applyDefaultTypingAttributes(using: editorMonospacedFont())
 
         if let textContainer = textView.textContainer {
             textContainer.widthTracksTextView = true
@@ -200,13 +270,15 @@ final class EditorTextContainerView: NSView {
     }
 
     private static func editorFont(ofSize size: CGFloat) -> NSFont {
-        for fontName in preferredEditorFontNames {
-            if let font = NSFont(name: fontName, size: size) {
-                return font
-            }
-        }
+        NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+    }
 
-        return .monospacedSystemFont(ofSize: size, weight: .regular)
+    private func editorMonospacedFont() -> NSFont {
+        Self.editorFont(ofSize: currentEditorFontSize)
+    }
+
+    private static func defaultEditorFont(ofSize size: CGFloat) -> NSFont {
+        NSFont.systemFont(ofSize: size)
     }
 
     private func applyDefaultTypingAttributes(using font: NSFont) {
@@ -214,6 +286,7 @@ final class EditorTextContainerView: NSView {
         textView.defaultParagraphStyle = paragraphStyle
         textView.typingAttributes[.font] = font
         textView.typingAttributes[.paragraphStyle] = paragraphStyle
+        textView.typingAttributes[.foregroundColor] = Self.editorForegroundColor()
     }
 
     private static func editorParagraphStyle() -> NSParagraphStyle {
@@ -222,11 +295,12 @@ final class EditorTextContainerView: NSView {
         return paragraphStyle
     }
 
-    private static func editorTextAttributes(using font: NSFont) -> [NSAttributedString.Key: Any] {
-        [
-            .font: font,
-            .paragraphStyle: editorParagraphStyle()
-        ]
+    private static func editorForegroundColor() -> NSColor {
+        .labelColor
+    }
+
+    private static func shouldUseMonospacedFont(for character: Character) -> Bool {
+        character.unicodeScalars.allSatisfy(\.isASCII)
     }
 
     private func configureScrollView() {
@@ -277,5 +351,11 @@ final class EditorTextContainerView: NSView {
 
     private func updateSeparatorColor() {
         separatorView.layer?.backgroundColor = LineNumberGutterView.separatorColor.cgColor
+    }
+
+    private func updateTextViewColors() {
+        textView.textColor = Self.editorForegroundColor()
+        textView.backgroundColor = .controlBackgroundColor
+        textView.insertionPointColor = Self.editorForegroundColor()
     }
 }

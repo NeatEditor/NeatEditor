@@ -11,7 +11,8 @@ struct WorkspaceView: View {
             EditorTabStripView(
                 tabs: $bindableWorkspace.tabs,
                 selectedTabID: workspaceStore.selectedTabID,
-                onSelectTab: workspaceStore.selectTab
+                onSelectTab: workspaceStore.selectTab,
+                onRenameTab: workspaceStore.renameDocument
             )
 
             if let selectedTabID = workspaceStore.selectedTabID,

@@ -1,6 +1,17 @@
 import Foundation
 
 struct DocumentPersistenceService {
+    enum PersistenceError: LocalizedError {
+        case destinationAlreadyExists(URL)
+
+        var errorDescription: String? {
+            switch self {
+            case .destinationAlreadyExists(let url):
+                return "A document named \"\(url.lastPathComponent)\" already exists."
+            }
+        }
+    }
+
     let defaultDirectory: URL
     private let fileManager: FileManager
 
@@ -28,6 +39,34 @@ struct DocumentPersistenceService {
         return savedTab
     }
 
+    func rename(tab: EditorTab, to newTitle: String) throws -> EditorTab {
+        var renamedTab = tab
+        renamedTab.title = newTitle
+
+        guard let fileURL = renamedTab.fileURL else {
+            return renamedTab
+        }
+
+        let normalizedFileURL = normalizedFileURL(for: fileURL)
+        let destinationURL = renamedFileURL(for: normalizedFileURL, title: newTitle)
+
+        guard destinationURL != normalizedFileURL else {
+            renamedTab.fileURL = normalizedFileURL
+            return renamedTab
+        }
+
+        guard !fileManager.fileExists(atPath: destinationURL.path) else {
+            throw PersistenceError.destinationAlreadyExists(destinationURL)
+        }
+
+        if fileManager.fileExists(atPath: normalizedFileURL.path) {
+            try fileManager.moveItem(at: normalizedFileURL, to: destinationURL)
+        }
+
+        renamedTab.fileURL = destinationURL
+        return renamedTab
+    }
+
     func openDocument(at fileURL: URL) throws -> EditorTab {
         let normalizedFileURL = normalizedFileURL(for: fileURL)
         let content = try String(contentsOf: normalizedFileURL, encoding: .utf8)
@@ -41,6 +80,15 @@ struct DocumentPersistenceService {
 
     func normalizedFileURL(for fileURL: URL) -> URL {
         fileURL.standardizedFileURL.resolvingSymlinksInPath()
+    }
+
+    private func renamedFileURL(for fileURL: URL, title: String) -> URL {
+        let pathExtension = fileURL.pathExtension.isEmpty ? "txt" : fileURL.pathExtension
+
+        return fileURL
+            .deletingLastPathComponent()
+            .appendingPathComponent(title)
+            .appendingPathExtension(pathExtension)
     }
 
     func nextUntitledName(existingTabs: [EditorTab]) -> String {

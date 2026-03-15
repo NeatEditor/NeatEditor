@@ -113,6 +113,18 @@ final class WorkspaceStore {
         }
     }
 
+    func renameDocument(id: UUID, to newTitle: String) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+
+        do {
+            tabs[index] = try persistenceService.rename(tab: tabs[index], to: newTitle)
+        } catch {
+            Self.logger.error("Failed to rename document: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
     func increaseEditorFontSize() {
         updateEditorFontSize(by: EditorFontMetrics.step)
     }

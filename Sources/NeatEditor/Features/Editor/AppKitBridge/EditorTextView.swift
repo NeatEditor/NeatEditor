@@ -37,7 +37,6 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.handleCompositionEnd(in: textView, containerView: containerView)
         }
         containerView.applyFontSize(fontSize)
-        containerView.refreshLineNumbers()
 
         return containerView
     }
@@ -53,10 +52,10 @@ struct EditorTextView: NSViewRepresentable {
             containerView.textView.string = text
             context.coordinator.isSyncingFromSwiftUI = false
             containerView.applyEditorTextAttributes()
-            containerView.refreshLineNumbers()
         }
 
         containerView.applyFontSize(fontSize)
+        containerView.enforceEditorTextAttributesIfNeeded()
 
         if context.coordinator.lastSearchRequestID != searchRequestID {
             context.coordinator.lastSearchRequestID = searchRequestID
@@ -74,6 +73,19 @@ struct EditorTextView: NSViewRepresentable {
             self.parent = parent
         }
 
+        func textView(
+            _ textView: NSTextView,
+            shouldChangeTextIn affectedCharRange: NSRange,
+            replacementString: String?
+        ) -> Bool {
+            guard let containerView = textView.enclosingScrollView?.superview as? EditorTextContainerView else {
+                return true
+            }
+
+            containerView.prepareTypingAttributes(for: replacementString)
+            return true
+        }
+
         func textDidChange(_ notification: Notification) {
             guard !isSyncingFromSwiftUI,
                   let textView = notification.object as? NSTextView,
@@ -84,6 +96,7 @@ struct EditorTextView: NSViewRepresentable {
             let isComposing = textView.hasMarkedText()
             if !isComposing {
                 parent.text = textView.string
+                containerView.applyEditorTextAttributes()
             }
 
             parent.onTextChange(isComposing)
@@ -96,8 +109,8 @@ struct EditorTextView: NSViewRepresentable {
             }
 
             parent.text = textView.string
+            containerView.applyEditorTextAttributes()
             parent.onCompositionEnd()
-            containerView.refreshLineNumbers()
         }
     }
 }
