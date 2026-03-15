@@ -17,6 +17,10 @@ struct NeatEditorApp: App {
     var body: some Scene {
         Window("NeatEditor", id: "main") {
             WorkspaceView()
+                .frame(
+                    minWidth: EditorTabStripView.minimumWindowEdge,
+                    minHeight: EditorTabStripView.minimumWindowEdge
+                )
                 .environment(workspaceStore)
         }
         .handlesExternalEvents(matching: [])

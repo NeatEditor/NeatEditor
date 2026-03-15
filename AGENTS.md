@@ -19,8 +19,11 @@
 - `project.yml`：XcodeGen 配置，是工程结构的真实来源。
 - `NeatEditor.xcodeproj`：生成产物；除非 `project.yml` 无法表达，否则不要手改。
 - `Sources/NeatEditor/App`：应用入口与 Scene/commands 配置。
-- `Sources/NeatEditor/Models`：状态模型与应用级管理对象。
-- `Sources/NeatEditor/Views`：SwiftUI 视图层。
+- `Sources/NeatEditor/App/Commands`：菜单命令与快捷键入口。
+- `Sources/NeatEditor/Features/Workspace`：工作区状态、标签栏与主界面。
+- `Sources/NeatEditor/Features/Editor/AppKitBridge`：编辑器桥接、行号 gutter、查找与缩放。
+- `Sources/NeatEditor/Services`：自动保存与文档持久化服务。
+- `Sources/NeatEditor/SharedUI`：共享 UI 样式与标题栏辅助视图。
 - 当前仓库还没有 `Tests/` 目录，也没有测试 target。
 
 ## 动手前
@@ -137,7 +140,8 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - 复用的视图片段拆成小组件或 `ViewModifier`。
 - 优先保留 macOS 桌面交互习惯：标题栏、工具栏、快捷键、菜单命令、窗口尺寸。
 - 修改窗口/命令相关逻辑时，同时检查 `Sources/NeatEditor/App/NeatEditorApp.swift`。
-- 修改编辑器或 tab 行为时，同时检查 `Sources/NeatEditor/Views/ContentView.swift` 与 `Sources/NeatEditor/Views/TabBarView.swift`。
+- 修改工作区或 tab 行为时，同时检查 `Sources/NeatEditor/Features/Workspace/WorkspaceView.swift` 与 `Sources/NeatEditor/Features/Workspace/EditorTabStripView.swift`。
+- 修改编辑器行为时，同时检查 `Sources/NeatEditor/Features/Editor/AppKitBridge/EditorTextView.swift` 与 `Sources/NeatEditor/Features/Editor/AppKitBridge/EditorTextContainerView.swift`。
 
 ### 错误处理
 - 不要新增 `!`、`try!`、强制 `as!`。
@@ -158,11 +162,15 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - 不引入第三方库，除非用户明确要求并确认；优先使用系统框架：`Foundation`、`SwiftUI`、`Observation`、`OSLog`、`SwiftData` 等。
 
 ## 与当前代码保持一致的实现提示
-- 文档标签页由 `TabItem` 建模，集中存放在 `DocumentManager.tabs`。
-- 当前选中文档由 `DocumentManager.selectedTabID` 驱动。
-- 自动保存由 `DocumentManager.queueAutoSave(for:)` 负责，采用 2 秒 debounce。
+- 文档标签页由 `EditorTab` 建模，集中存放在 `WorkspaceStore.tabs`。
+- 当前选中文档由 `WorkspaceStore.selectedTabID` 驱动。
+- 自动保存由 `WorkspaceStore.queueAutoSave(for:)` 触发，底层通过 `AutoSaveScheduler` 做 2 秒 debounce。
+- 新建标签前、切换标签时、关闭当前标签时，都会先保存当前选中文档。
+- 外部文件打开入口由 `ExternalFileOpenCoordinator` 接入，实际打开逻辑集中在 `WorkspaceStore.openFiles(at:)`。
+- 同一路径的外部文件不会重复打开多个标签；重命名已落盘文件时会同步重命名磁盘文件并保留原扩展名。
 - 切换标签时会保存旧标签；应用转入 inactive/background 时会保存全部文档。
 - 空白内容（包括仅空白字符）不落盘是当前产品约定；触碰保存逻辑时不要把“清空文档后未覆盖磁盘文件”当作 bug 修掉，README 与实现需保持一致。
+- 当前工作区支持内嵌搜索栏、`Command + +/-` 缩放，以及标题栏图钉控制窗口置顶；触碰相关交互时要连同命令菜单和最小窗口尺寸一起验证。
 - 触碰这些逻辑时，要连同保存时机一起验证，不要只看 UI 是否能显示。
 
 ## Agent 工作方式

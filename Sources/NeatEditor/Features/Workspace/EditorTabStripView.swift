@@ -3,6 +3,21 @@ import SwiftUI
 
 struct EditorTabStripView: View {
     static let titleBarHeight: CGFloat = 38
+    static let leadingPadding: CGFloat = 76
+    static let trailingTabScrollPadding: CGFloat = 12
+    static let trailingAccessoryWidth: CGFloat = 48
+    static let trailingAccessoryPadding: CGFloat = 3
+    static let minimumWindowEdge: CGFloat = {
+        // Keep the window large enough for traffic lights, two tabs, and the pin accessory.
+        ceil(
+            leadingPadding +
+            trailingTabScrollPadding +
+            trailingAccessoryWidth +
+            trailingAccessoryPadding +
+            (EditorTabItemView.minimumTabWidth * 2) +
+            24
+        )
+    }()
 
     @Binding var tabs: [EditorTab]
     let selectedTabID: UUID?
@@ -10,10 +25,6 @@ struct EditorTabStripView: View {
     let onRenameTab: (UUID, String) -> Void
     @State private var selectedTabFrame: CGRect = .null
     @State private var isWindowPinned = false
-
-    // Window control buttons width + padding to ensure tabs don't overlap traffic lights
-    private let leadingPadding: CGFloat = 76
-    private let trailingAccessoryWidth: CGFloat = 48
 
     var body: some View {
         HStack(spacing: 0) {
@@ -27,15 +38,15 @@ struct EditorTabStripView: View {
                         }
                     }
                 }
-                .padding(.leading, leadingPadding)
-                .padding(.trailing, 12)
+                .padding(.leading, Self.leadingPadding)
+                .padding(.trailing, Self.trailingTabScrollPadding)
                 .padding(.top, 6)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             PinWindowButton(isWindowPinned: $isWindowPinned)
-                .frame(width: trailingAccessoryWidth)
-                .padding(.trailing, 6)
+                .frame(width: Self.trailingAccessoryWidth)
+                .padding(.trailing, Self.trailingAccessoryPadding)
                 .padding(.top, 4)
         }
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
@@ -67,7 +78,7 @@ private struct PinWindowButton: View {
         Button {
             isWindowPinned.toggle()
         } label: {
-            Image(systemName: isWindowPinned ? "pin.fill" : "pin")
+            Image(systemName: "pin.fill")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(isWindowPinned ? Color.accentColor : Color.secondary)
                 .frame(width: 28, height: 28)
@@ -90,7 +101,7 @@ struct EditorTabItemView: View {
     private static let titleFontSize: CGFloat = 13
     private static let invalidTitleSeparators = CharacterSet(charactersIn: "/:")
     private static let minimumHorizontalPadding: CGFloat = textWidth(for: "untit")
-    private static let minimumTabWidth: CGFloat = {
+    static let minimumTabWidth: CGFloat = {
         let titleWidth = textWidth(for: "untitleduntitled")
         return ceil(titleWidth + (minimumHorizontalPadding * 2))
     }()
