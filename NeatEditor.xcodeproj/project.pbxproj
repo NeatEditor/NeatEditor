@@ -7,32 +7,60 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		16EC1F059C67919FE7417ECA /* WorkspaceCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C1E4F1C5E0852265B8A3A4 /* WorkspaceCommands.swift */; };
+		21B6368381D44AB472B6E272 /* ZoomableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0DD15623CA315741B803E /* ZoomableTextView.swift */; };
+		260FB1D768B914BEC7E705CE /* LineNumberGutterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF0D55E27675FFDA411D699 /* LineNumberGutterView.swift */; };
 		28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE177253A6D16097E143352 /* NeatEditorApp.swift */; };
-		2969C19C0A416A9B8EEA5081 /* DocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EF032AC02271251D613513E /* DocumentManager.swift */; };
 		2F0D92985DE89AFB1227039E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC4981C6B05519CD1877B4D5 /* Assets.xcassets */; };
-		555AE572774E813E1EE630B2 /* EditorChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4E3FA87533D5B31C17C6A0 /* EditorChrome.swift */; };
-		71CA1C00CFA65D165819D890 /* TabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9C056A4636CFFAD1F20C226 /* TabItem.swift */; };
-		9AA8A5C6A9DC4AF56954C2C4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B567D6FDCBD90B6E8F016CB0 /* ContentView.swift */; };
-		A11AB0EA937ACF61DD1013A8 /* LineNumberTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FA3A778541E3DDF2A58FA4 /* LineNumberTextEditor.swift */; };
-		E00EC6C0F8F4287B72CE19B9 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 692AE609E1E9F30E09D3BA26 /* TabBarView.swift */; };
+		30257E6B79239E28AD1DFF2A /* EditorTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE07E7303361F05267B1085 /* EditorTab.swift */; };
+		3143A92017C91179B2A2A7ED /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997F47F5D36FCDF06285DFAB /* ZoomableScrollView.swift */; };
+		40E4B08329E49913ADF40EFC /* EditorTextContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */; };
+		44208CD4C131FC71C34946E1 /* EditorTabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */; };
+		4A7455D8ED46B4FC817A58B3 /* EditorChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */; };
+		4C6DD29CD0452D9311044BE8 /* EditorTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC9CB3A37D479100CB1B9D6 /* EditorTextView.swift */; };
+		6C4A4EF55D4E956B1CB30509 /* DocumentPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */; };
+		A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */; };
+		AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */; };
+		DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */; };
+		F9F0759B221E03E66297E6D5 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		14FA3A778541E3DDF2A58FA4 /* LineNumberTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberTextEditor.swift; sourceTree = "<group>"; };
-		1EF032AC02271251D613513E /* DocumentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentManager.swift; sourceTree = "<group>"; };
-		692AE609E1E9F30E09D3BA26 /* TabBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarView.swift; sourceTree = "<group>"; };
+		0CA0DD15623CA315741B803E /* ZoomableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableTextView.swift; sourceTree = "<group>"; };
+		0CF0D55E27675FFDA411D699 /* LineNumberGutterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberGutterView.swift; sourceTree = "<group>"; };
+		14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSaveScheduler.swift; sourceTree = "<group>"; };
+		3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleBarTrafficLightAlignmentView.swift; sourceTree = "<group>"; };
+		60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTabStripView.swift; sourceTree = "<group>"; };
+		63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStore.swift; sourceTree = "<group>"; };
+		64C1E4F1C5E0852265B8A3A4 /* WorkspaceCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceCommands.swift; sourceTree = "<group>"; };
 		7AE177253A6D16097E143352 /* NeatEditorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeatEditorApp.swift; sourceTree = "<group>"; };
-		B567D6FDCBD90B6E8F016CB0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		7FC9CB3A37D479100CB1B9D6 /* EditorTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextView.swift; sourceTree = "<group>"; };
+		997F47F5D36FCDF06285DFAB /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableScrollView.swift; sourceTree = "<group>"; };
+		9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextContainerView.swift; sourceTree = "<group>"; };
+		A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPersistenceService.swift; sourceTree = "<group>"; };
+		BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		C59982890BA0049E8CC31E4F /* NeatEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeatEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC4981C6B05519CD1877B4D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		D9C056A4636CFFAD1F20C226 /* TabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabItem.swift; sourceTree = "<group>"; };
-		EB4E3FA87533D5B31C17C6A0 /* EditorChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorChrome.swift; sourceTree = "<group>"; };
+		CEE07E7303361F05267B1085 /* EditorTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTab.swift; sourceTree = "<group>"; };
+		D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorChrome.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		13FFF4BFB75B916FA0599860 /* Workspace */ = {
+			isa = PBXGroup;
+			children = (
+				CEE07E7303361F05267B1085 /* EditorTab.swift */,
+				60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */,
+				63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */,
+				BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */,
+			);
+			path = Workspace;
+			sourceTree = "<group>";
+		};
 		159583F8B97641E58C7DD68F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				BD11E00755412FD8FBA19523 /* Commands */,
 				7AE177253A6D16097E143352 /* NeatEditorApp.swift */,
 			);
 			path = App;
@@ -54,23 +82,22 @@
 			);
 			sourceTree = "<group>";
 		};
-		50F7815DB56865FC0996A0D9 /* Views */ = {
+		2EBD0DB1ACC72C10C561D621 /* SharedUI */ = {
 			isa = PBXGroup;
 			children = (
-				B567D6FDCBD90B6E8F016CB0 /* ContentView.swift */,
-				EB4E3FA87533D5B31C17C6A0 /* EditorChrome.swift */,
-				14FA3A778541E3DDF2A58FA4 /* LineNumberTextEditor.swift */,
-				692AE609E1E9F30E09D3BA26 /* TabBarView.swift */,
+				C14B05E6C1A100540B6102A6 /* TitleBar */,
+				D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */,
 			);
-			path = Views;
+			path = SharedUI;
 			sourceTree = "<group>";
 		};
 		6C4008B94B5B9575C7D4C05B /* NeatEditor */ = {
 			isa = PBXGroup;
 			children = (
 				159583F8B97641E58C7DD68F /* App */,
-				8A73940DB02FD1D6108FDF13 /* Models */,
-				50F7815DB56865FC0996A0D9 /* Views */,
+				DFBABB36B5A75980E9007BC5 /* Features */,
+				A22CFA8E6AABC86E0B1F852D /* Services */,
+				2EBD0DB1ACC72C10C561D621 /* SharedUI */,
 				CC4981C6B05519CD1877B4D5 /* Assets.xcassets */,
 			);
 			path = NeatEditor;
@@ -84,13 +111,58 @@
 			path = Sources;
 			sourceTree = "<group>";
 		};
-		8A73940DB02FD1D6108FDF13 /* Models */ = {
+		A22CFA8E6AABC86E0B1F852D /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				1EF032AC02271251D613513E /* DocumentManager.swift */,
-				D9C056A4636CFFAD1F20C226 /* TabItem.swift */,
+				14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */,
+				A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */,
 			);
-			path = Models;
+			path = Services;
+			sourceTree = "<group>";
+		};
+		B8324446F9926CC8ECAB9287 /* AppKitBridge */ = {
+			isa = PBXGroup;
+			children = (
+				9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */,
+				7FC9CB3A37D479100CB1B9D6 /* EditorTextView.swift */,
+				0CF0D55E27675FFDA411D699 /* LineNumberGutterView.swift */,
+				997F47F5D36FCDF06285DFAB /* ZoomableScrollView.swift */,
+				0CA0DD15623CA315741B803E /* ZoomableTextView.swift */,
+			);
+			path = AppKitBridge;
+			sourceTree = "<group>";
+		};
+		BC8551AEC3DC40534B42A465 /* Editor */ = {
+			isa = PBXGroup;
+			children = (
+				B8324446F9926CC8ECAB9287 /* AppKitBridge */,
+			);
+			path = Editor;
+			sourceTree = "<group>";
+		};
+		BD11E00755412FD8FBA19523 /* Commands */ = {
+			isa = PBXGroup;
+			children = (
+				64C1E4F1C5E0852265B8A3A4 /* WorkspaceCommands.swift */,
+			);
+			path = Commands;
+			sourceTree = "<group>";
+		};
+		C14B05E6C1A100540B6102A6 /* TitleBar */ = {
+			isa = PBXGroup;
+			children = (
+				3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */,
+			);
+			path = TitleBar;
+			sourceTree = "<group>";
+		};
+		DFBABB36B5A75980E9007BC5 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				BC8551AEC3DC40534B42A465 /* Editor */,
+				13FFF4BFB75B916FA0599860 /* Workspace */,
+			);
+			path = Features;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -163,13 +235,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9AA8A5C6A9DC4AF56954C2C4 /* ContentView.swift in Sources */,
-				2969C19C0A416A9B8EEA5081 /* DocumentManager.swift in Sources */,
-				555AE572774E813E1EE630B2 /* EditorChrome.swift in Sources */,
-				A11AB0EA937ACF61DD1013A8 /* LineNumberTextEditor.swift in Sources */,
+				AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */,
+				6C4A4EF55D4E956B1CB30509 /* DocumentPersistenceService.swift in Sources */,
+				4A7455D8ED46B4FC817A58B3 /* EditorChrome.swift in Sources */,
+				30257E6B79239E28AD1DFF2A /* EditorTab.swift in Sources */,
+				44208CD4C131FC71C34946E1 /* EditorTabStripView.swift in Sources */,
+				40E4B08329E49913ADF40EFC /* EditorTextContainerView.swift in Sources */,
+				4C6DD29CD0452D9311044BE8 /* EditorTextView.swift in Sources */,
+				260FB1D768B914BEC7E705CE /* LineNumberGutterView.swift in Sources */,
 				28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */,
-				E00EC6C0F8F4287B72CE19B9 /* TabBarView.swift in Sources */,
-				71CA1C00CFA65D165819D890 /* TabItem.swift in Sources */,
+				A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */,
+				16EC1F059C67919FE7417ECA /* WorkspaceCommands.swift in Sources */,
+				DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */,
+				F9F0759B221E03E66297E6D5 /* WorkspaceView.swift in Sources */,
+				3143A92017C91179B2A2A7ED /* ZoomableScrollView.swift in Sources */,
+				21B6368381D44AB472B6E272 /* ZoomableTextView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

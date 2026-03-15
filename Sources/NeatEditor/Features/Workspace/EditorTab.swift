@@ -1,6 +1,6 @@
 import Foundation
 
-struct TabItem: Identifiable, Hashable {
+struct EditorTab: Identifiable, Hashable {
     let id: UUID
     var title: String
     var content: String

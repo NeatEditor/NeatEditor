@@ -1,20 +1,23 @@
 import AppKit
 import SwiftUI
 
-struct TabBarView: View {
-    @Binding var tabs: [TabItem]
-    @Binding var selectedTabID: UUID?
+struct EditorTabStripView: View {
+    static let titleBarHeight: CGFloat = 38
+
+    @Binding var tabs: [EditorTab]
+    let selectedTabID: UUID?
+    let onSelectTab: (UUID) -> Void
     @State private var selectedTabFrame: CGRect = .null
-    
+
     // Window control buttons width + padding to ensure tabs don't overlap traffic lights
     private let leadingPadding: CGFloat = 76
-    
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
                 ForEach($tabs) { $tab in
-                    TabItemView(tab: $tab, isSelected: selectedTabID == tab.id) {
-                        selectedTabID = tab.id
+                    EditorTabItemView(tab: $tab, isSelected: selectedTabID == tab.id) {
+                        onSelectTab(tab.id)
                     }
                 }
             }
@@ -32,12 +35,14 @@ struct TabBarView: View {
                 TabBarDividerOverlay(selectedTabFrame: selectedTabFrame)
             }
         }
-        .frame(height: 38)
+        .background {
+            TitleBarTrafficLightAlignmentView(titleBarHeight: Self.titleBarHeight)
+        }
+        .frame(height: Self.titleBarHeight)
     }
 }
 
-// Subview for a single Tab
-struct TabItemView: View {
+struct EditorTabItemView: View {
     private static let titleFontSize: CGFloat = 13
     private static let minimumHorizontalPadding: CGFloat = textWidth(for: "untit")
     private static let minimumTabWidth: CGFloat = {
@@ -52,10 +57,10 @@ struct TabItemView: View {
         return (text as NSString).size(withAttributes: attributes).width
     }
 
-    @Binding var tab: TabItem
+    @Binding var tab: EditorTab
     let isSelected: Bool
     let action: () -> Void
-    
+
     @State private var isHovering = false
     @State private var isEditing = false
     @FocusState private var isFocused: Bool
@@ -276,14 +281,18 @@ private struct ConnectedTabBorderShape: Shape {
 
 #Preview {
     @Previewable @State var tabs = [
-        TabItem(id: UUID(), title: "Untitled 1"),
-        TabItem(id: UUID(), title: "Config.yml"),
-        TabItem(id: UUID(), title: "Readme.md")
+        EditorTab(id: UUID(), title: "Untitled 1"),
+        EditorTab(id: UUID(), title: "Config.yml"),
+        EditorTab(id: UUID(), title: "Readme.md")
     ]
     @Previewable @State var selectedTabID: UUID?
-    
+
     VStack(spacing: 0) {
-        TabBarView(tabs: $tabs, selectedTabID: $selectedTabID)
+        EditorTabStripView(
+            tabs: $tabs,
+            selectedTabID: selectedTabID,
+            onSelectTab: { selectedTabID = $0 }
+        )
         Spacer()
     }
     .frame(width: 400, height: 200)

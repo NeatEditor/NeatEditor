@@ -56,9 +56,19 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 先执行上面的构建命令，然后关闭旧进程并启动新版本：
 ```bash
 pkill -x "NeatEditor" || true
-open "build/DerivedData/Build/Products/Debug/NeatEditor.app"
+for attempt in 1 2 3; do
+    if open "build/DerivedData/Build/Products/Debug/NeatEditor.app"; then
+        break
+    fi
+    if [ "$attempt" -eq 3 ]; then
+        echo "Failed to launch NeatEditor after 3 attempts" >&2
+        exit 1
+    fi
+    sleep 1
+done
 ```
 - 对 UI、窗口行为、命令菜单、保存流程做了修改时，优先执行这组命令验证。
+- 如果 `open` 失败，必须继续重试 2 次；只有连续 3 次都失败时，才可以向用户报告无法启动。
 
 ### 测试
 当前状态：
@@ -158,6 +168,7 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - 先读上下文，再改代码。
 - 尽量小步提交，避免把“修功能”和“重排格式”混在一起。
 - 完成修改后至少执行一次构建；如果变更影响运行流程，再重启 App 验证。
+- 重启 App 时，如果 `open` 启动失败，必须再重试 2 次；只有连续 3 次都失败时，才可结束并明确说明启动失败。
 - 若测试仍未配置，不要谎称已跑测试；应明确说明“已构建/已 analyze，但 test action 尚不存在”。
 - 若你新增了测试设施，请同步更新本文件中的命令示例。
 
