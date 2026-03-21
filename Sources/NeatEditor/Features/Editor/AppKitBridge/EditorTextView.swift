@@ -4,7 +4,9 @@ import SwiftUI
 struct EditorTextView: NSViewRepresentable {
     @Binding var text: String
     let fontSize: CGFloat
+    let tabBehavior: TabBehavior
     let searchQuery: String
+    let isRegexSearchEnabled: Bool
     let searchRequestID: Int
 
     let onTextChange: (_ isComposing: Bool) -> Void
@@ -27,6 +29,7 @@ struct EditorTextView: NSViewRepresentable {
         textView.delegate = context.coordinator
         textView.string = text
         textView.onOpenFiles = onOpenFiles
+        textView.tabBehavior = tabBehavior
         containerView.applyEditorTextAttributes()
         textView.onCompositionEnd = {
             [weak containerView, weak coordinator = context.coordinator, weak textView] in
@@ -46,6 +49,7 @@ struct EditorTextView: NSViewRepresentable {
         containerView.onIncreaseFontSize = onIncreaseFontSize
         containerView.onDecreaseFontSize = onDecreaseFontSize
         containerView.textView.onOpenFiles = onOpenFiles
+        containerView.textView.tabBehavior = tabBehavior
 
         if !containerView.textView.hasMarkedText() && containerView.textView.string != text {
             context.coordinator.isSyncingFromSwiftUI = true
@@ -59,7 +63,10 @@ struct EditorTextView: NSViewRepresentable {
 
         if context.coordinator.lastSearchRequestID != searchRequestID {
             context.coordinator.lastSearchRequestID = searchRequestID
-            containerView.performSearch(for: searchQuery)
+            containerView.performSearch(
+                for: searchQuery,
+                usesRegularExpression: isRegexSearchEnabled
+            )
         }
     }
 
@@ -96,7 +103,6 @@ struct EditorTextView: NSViewRepresentable {
             let isComposing = textView.hasMarkedText()
             if !isComposing {
                 parent.text = textView.string
-                containerView.applyEditorTextAttributes()
             }
 
             parent.onTextChange(isComposing)

@@ -237,7 +237,7 @@ final class LineNumberGutterView: NSView {
         let labelSize = label.size(withAttributes: textAttributes)
         let rect = NSRect(
             x: Metrics.leftPadding,
-            y: y + max(0, (lineHeight - labelSize.height) / 2),
+            y: y + max(0, lineHeight - labelSize.height),
             width: bounds.width - Metrics.leftPadding - Metrics.rightPadding,
             height: labelSize.height
         )

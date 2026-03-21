@@ -1,3 +1,5 @@
+import Foundation
+import AppKit
 import SwiftUI
 
 struct WorkspaceCommands: Commands {
@@ -14,6 +16,13 @@ struct WorkspaceCommands: Commands {
                 workspaceStore.createNewDocument()
             }
             .keyboardShortcut("t", modifiers: .command)
+        }
+
+        CommandGroup(after: .newItem) {
+            Button("Open...") {
+                openDocumentsFromUserHome()
+            }
+            .keyboardShortcut("o", modifiers: .command)
         }
         
         CommandGroup(replacing: .appSettings) {
@@ -34,6 +43,12 @@ struct WorkspaceCommands: Commands {
             }
             .keyboardShortcut("w", modifiers: .command)
             .disabled(workspaceStore.selectedTabID == nil)
+
+            Button("Reopen Closed Tab") {
+                workspaceStore.reopenLastClosedDocument()
+            }
+            .keyboardShortcut("t", modifiers: [.command, .shift])
+            .disabled(!workspaceStore.canReopenClosedTab)
         }
 
         CommandGroup(after: .textEditing) {
@@ -55,5 +70,22 @@ struct WorkspaceCommands: Commands {
             }
             .keyboardShortcut("-", modifiers: .command)
         }
+    }
+
+    @MainActor
+    private func openDocumentsFromUserHome() {
+        let panel = NSOpenPanel()
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Documents", isDirectory: true)
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        panel.resolvesAliases = true
+
+        guard panel.runModal() == .OK else {
+            return
+        }
+
+        workspaceStore.openFiles(at: panel.urls)
     }
 }

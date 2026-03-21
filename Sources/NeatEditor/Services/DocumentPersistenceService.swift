@@ -31,10 +31,11 @@ struct DocumentPersistenceService {
 
         var savedTab = tab
         let fileURL = savedTab.fileURL
-            ?? defaultDirectory.appendingPathComponent("\(savedTab.title).txt")
+            ?? initialFileURL(for: savedTab.title)
 
         try savedTab.content.write(to: fileURL, atomically: true, encoding: .utf8)
         savedTab.fileURL = fileURL
+        savedTab.title = fileURL.lastPathComponent
 
         return savedTab
     }
@@ -52,6 +53,7 @@ struct DocumentPersistenceService {
 
         guard destinationURL != normalizedFileURL else {
             renamedTab.fileURL = normalizedFileURL
+            renamedTab.title = normalizedFileURL.lastPathComponent
             return renamedTab
         }
 
@@ -64,6 +66,7 @@ struct DocumentPersistenceService {
         }
 
         renamedTab.fileURL = destinationURL
+        renamedTab.title = destinationURL.lastPathComponent
         return renamedTab
     }
 
@@ -72,7 +75,7 @@ struct DocumentPersistenceService {
         let content = try String(contentsOf: normalizedFileURL, encoding: .utf8)
 
         return EditorTab(
-            title: normalizedFileURL.deletingPathExtension().lastPathComponent,
+            title: normalizedFileURL.lastPathComponent,
             content: content,
             fileURL: normalizedFileURL
         )
@@ -83,12 +86,17 @@ struct DocumentPersistenceService {
     }
 
     private func renamedFileURL(for fileURL: URL, title: String) -> URL {
-        let pathExtension = fileURL.pathExtension.isEmpty ? "txt" : fileURL.pathExtension
-
         return fileURL
             .deletingLastPathComponent()
             .appendingPathComponent(title)
-            .appendingPathExtension(pathExtension)
+    }
+
+    private func initialFileURL(for title: String) -> URL {
+        let fileName = (title as NSString).pathExtension.isEmpty
+            ? "\(title).txt"
+            : title
+
+        return defaultDirectory.appendingPathComponent(fileName)
     }
 
     func nextUntitledName(existingTabs: [EditorTab]) -> String {

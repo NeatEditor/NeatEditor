@@ -12,7 +12,8 @@ struct WorkspaceView: View {
                 tabs: $bindableWorkspace.tabs,
                 selectedTabID: workspaceStore.selectedTabID,
                 onSelectTab: workspaceStore.selectTab,
-                onRenameTab: workspaceStore.renameDocument
+                onRenameTab: workspaceStore.renameDocument,
+                onCloseTab: workspaceStore.closeDocument
             )
 
             if let selectedTabID = workspaceStore.selectedTabID,
@@ -24,7 +25,9 @@ struct WorkspaceView: View {
                     EditorTextView(
                         text: $bindableWorkspace.tabs[index].content,
                         fontSize: workspaceStore.editorFontSize,
+                        tabBehavior: workspaceStore.tabBehavior,
                         searchQuery: workspaceStore.searchQuery,
+                        isRegexSearchEnabled: workspaceStore.isRegexSearchEnabled,
                         searchRequestID: workspaceStore.searchRequestID,
                         onTextChange: { isComposing in
                             if isComposing {
@@ -97,6 +100,24 @@ struct WorkspaceView: View {
                 .onSubmit {
                     workspaceStore.submitSearch()
                 }
+
+            Button {
+                workspaceStore.toggleRegexSearch()
+            } label: {
+                Text(".*")
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(
+                        workspaceStore.isRegexSearchEnabled ? Color.accentColor : .secondary
+                    )
+                    .frame(minWidth: 28)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .accessibilityLabel(
+                workspaceStore.isRegexSearchEnabled
+                ? "Disable Regular Expression Search"
+                : "Enable Regular Expression Search"
+            )
 
             Button("Search") {
                 workspaceStore.submitSearch()

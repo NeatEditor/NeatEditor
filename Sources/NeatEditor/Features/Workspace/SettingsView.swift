@@ -32,6 +32,23 @@ struct SettingsView: View {
                             
                             Spacer()
                         }
+                        
+                        Divider()
+                            .padding(.vertical, 4)
+                        
+                        HStack {
+                            Text("Tab Behavior")
+                                .frame(width: 100, alignment: .leading)
+                            
+                            Picker("", selection: Bindable(workspaceStore).tabBehavior) {
+                                ForEach(TabBehavior.allCases, id: \.self) { behavior in
+                                    Text(behavior.rawValue).tag(behavior)
+                                }
+                            }
+                            .frame(width: 120)
+                            
+                            Spacer()
+                        }
                     }
                     .padding(20)
                     .background(EditorChrome.editorSurface.opacity(0.5))

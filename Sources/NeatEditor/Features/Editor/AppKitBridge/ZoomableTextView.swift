@@ -10,6 +10,7 @@ final class ZoomableTextView: NSTextView {
     var onDecreaseFontSize: () -> Void = {}
     var onCompositionEnd: () -> Void = {}
     var onOpenFiles: ([URL]) -> Void = { _ in }
+    var tabBehavior: TabBehavior = .spaces2
 
     override var readablePasteboardTypes: [NSPasteboard.PasteboardType] {
         prioritizedPasteboardTypes(from: super.readablePasteboardTypes)
@@ -33,6 +34,10 @@ final class ZoomableTextView: NSTextView {
         }
 
         super.keyDown(with: event)
+    }
+
+    override func insertTab(_ sender: Any?) {
+        insertText(tabBehavior.stringValue, replacementRange: selectedRange())
     }
 
     override func unmarkText() {

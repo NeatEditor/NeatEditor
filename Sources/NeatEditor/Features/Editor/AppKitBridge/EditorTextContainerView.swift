@@ -4,6 +4,7 @@ final class EditorTextContainerView: NSView {
     let textView: ZoomableTextView
 
     private static let editorLineHeightMultiple: CGFloat = 1.08
+    private static let searchHighlightColor = NSColor.controlAccentColor.withAlphaComponent(0.22)
     private var currentEditorFontSize: CGFloat = NSFont.systemFontSize
 
     var onIncreaseFontSize: () -> Void {
@@ -32,7 +33,7 @@ final class EditorTextContainerView: NSView {
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         updateTextViewColors()
-        applyEditorTextAttributes()
+        applyDefaultTypingAttributes(using: editorMonospacedFont())
         updateSeparatorColor()
         lineNumberView.updateColors()
     }
@@ -94,151 +95,159 @@ final class EditorTextContainerView: NSView {
 
         if didChangeFont {
             textView.font = font
-            applyEditorTextAttributes()
-        } else {
-            applyDefaultTypingAttributes(using: font)
+            refreshLineNumbers()
         }
+
+        applyDefaultTypingAttributes(using: font)
     }
 
     func applyEditorTextAttributes() {
-        let monospacedFont = editorMonospacedFont()
-        let defaultFont = Self.defaultEditorFont(ofSize: monospacedFont.pointSize)
-        applyDefaultTypingAttributes(using: monospacedFont)
-
-        guard let textStorage = textView.textStorage, textStorage.length > 0 else {
-            return
-        }
-
-        let fullRange = NSRange(location: 0, length: textStorage.length)
-        let paragraphStyle = Self.editorParagraphStyle()
-        let foregroundColor = Self.editorForegroundColor()
-        textStorage.beginEditing()
-        textStorage.setAttributes(
-            [
-                .font: defaultFont,
-                .paragraphStyle: paragraphStyle,
-                .foregroundColor: foregroundColor
-            ],
-            range: fullRange
-        )
-
-        let string = textStorage.string
-        var runStart = string.startIndex
-
-        while runStart < string.endIndex {
-            let isMonospacedRun = Self.shouldUseMonospacedFont(for: string[runStart])
-            var runEnd = string.index(after: runStart)
-
-            while runEnd < string.endIndex,
-                  Self.shouldUseMonospacedFont(for: string[runEnd]) == isMonospacedRun {
-                runEnd = string.index(after: runEnd)
-            }
-
-            if isMonospacedRun {
-                textStorage.addAttribute(
-                    .font,
-                    value: monospacedFont,
-                    range: NSRange(runStart..<runEnd, in: string)
-                )
-            }
-
-            runStart = runEnd
-        }
-
-        textStorage.endEditing()
+        textView.font = editorMonospacedFont()
+        updateTextViewColors()
+        applyDefaultTypingAttributes(using: editorMonospacedFont())
         refreshLineNumbers()
     }
 
     func enforceEditorTextAttributesIfNeeded() {
         let font = editorMonospacedFont()
+        updateTextViewColors()
         applyDefaultTypingAttributes(using: font)
-
-        guard let textStorage = textView.textStorage, textStorage.length > 0 else {
-            return
-        }
-
-        let attributes = textStorage.attributes(at: 0, effectiveRange: nil)
-        let currentFont = attributes[.font] as? NSFont
-        let currentParagraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle
-        let needsFontRefresh = currentFont?.fontName != font.fontName
-            || currentFont?.pointSize != font.pointSize
-        let needsParagraphRefresh = currentParagraphStyle?.lineHeightMultiple
-            != Self.editorLineHeightMultiple
-
-        guard needsFontRefresh || needsParagraphRefresh else {
-            return
-        }
-
-        applyEditorTextAttributes()
     }
 
     func prepareTypingAttributes(for replacementString: String?) {
-        let pointSize = currentEditorFontSize
-        let font: NSFont
-
-        if let firstCharacter = replacementString?.first,
-           Self.shouldUseMonospacedFont(for: firstCharacter) {
-            font = Self.editorFont(ofSize: pointSize)
-        } else if replacementString?.isEmpty == false {
-            font = Self.defaultEditorFont(ofSize: pointSize)
-        } else {
-            font = Self.editorFont(ofSize: pointSize)
-        }
-
-        applyDefaultTypingAttributes(using: font)
+        _ = replacementString
+        applyDefaultTypingAttributes(using: editorMonospacedFont())
     }
 
-    func performSearch(for query: String) {
+    func performSearch(for query: String, usesRegularExpression: Bool) {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
+            clearSearchHighlights()
             return
         }
 
-        let fullText = textView.string as NSString
-        guard fullText.length > 0 else {
+        let fullText = textView.string
+        guard !fullText.isEmpty else {
+            clearSearchHighlights()
             NSSound.beep()
             return
         }
+
+        let matchRanges = if usesRegularExpression {
+            regularExpressionSearchRanges(for: trimmedQuery, in: fullText)
+        } else {
+            literalSearchRanges(for: trimmedQuery, in: fullText)
+        }
+
+        guard !matchRanges.isEmpty else {
+            clearSearchHighlights()
+            NSSound.beep()
+            return
+        }
+
+        applySearchHighlights(for: matchRanges)
 
         let selectedRange = textView.selectedRange()
         let selectionEnd = selectedRange.location == NSNotFound
             ? 0
-            : min(NSMaxRange(selectedRange), fullText.length)
-        let searchOptions: NSString.CompareOptions = [.caseInsensitive]
-        let forwardSearchRange = NSRange(
-            location: selectionEnd,
-            length: fullText.length - selectionEnd
-        )
+            : min(NSMaxRange(selectedRange), fullText.utf16.count)
 
-        var matchRange = fullText.range(
-            of: trimmedQuery,
-            options: searchOptions,
-            range: forwardSearchRange
-        )
-
-        if matchRange.location == NSNotFound, selectionEnd > 0 {
-            matchRange = fullText.range(
-                of: trimmedQuery,
-                options: searchOptions,
-                range: NSRange(location: 0, length: selectionEnd)
-            )
-        }
-
-        guard matchRange.location != NSNotFound else {
-            NSSound.beep()
-            return
-        }
+        let matchRange = nextMatchRange(from: matchRanges, selectionEnd: selectionEnd)
 
         textView.window?.makeFirstResponder(textView)
         textView.setSelectedRange(matchRange)
         textView.scrollRangeToVisible(matchRange)
     }
 
+    private func literalSearchRanges(
+        for query: String,
+        in fullText: String
+    ) -> [NSRange] {
+        let nsText = fullText as NSString
+        let searchOptions: NSString.CompareOptions = [.caseInsensitive]
+        var searchRange = NSRange(location: 0, length: nsText.length)
+        var matchRanges: [NSRange] = []
+
+        while searchRange.length > 0 {
+            let matchRange = nsText.range(
+                of: query,
+                options: searchOptions,
+                range: searchRange
+            )
+
+            guard matchRange.location != NSNotFound else {
+                break
+            }
+
+            matchRanges.append(matchRange)
+
+            let nextLocation = NSMaxRange(matchRange)
+            guard nextLocation < nsText.length else {
+                break
+            }
+
+            searchRange = NSRange(
+                location: nextLocation,
+                length: nsText.length - nextLocation
+            )
+        }
+
+        return matchRanges
+    }
+
+    private func regularExpressionSearchRanges(
+        for pattern: String,
+        in fullText: String
+    ) -> [NSRange] {
+        do {
+            let regex = try Regex(pattern).ignoresCase()
+            return fullText.matches(of: regex).compactMap { NSRange($0.range, in: fullText) }
+        } catch {
+            return []
+        }
+    }
+
+    private func nextMatchRange(from matchRanges: [NSRange], selectionEnd: Int) -> NSRange {
+        if let nextMatch = matchRanges.first(where: { $0.location >= selectionEnd }) {
+            return nextMatch
+        }
+
+        return matchRanges[0]
+    }
+
+    private func applySearchHighlights(for matchRanges: [NSRange]) {
+        guard let layoutManager = textView.layoutManager,
+              let textContainer = textView.textContainer else {
+            return
+        }
+
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+        layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: glyphRange)
+
+        for matchRange in matchRanges {
+            layoutManager.addTemporaryAttribute(
+                .backgroundColor,
+                value: Self.searchHighlightColor,
+                forCharacterRange: matchRange
+            )
+        }
+    }
+
+    private func clearSearchHighlights() {
+        guard let layoutManager = textView.layoutManager,
+              let textContainer = textView.textContainer else {
+            return
+        }
+
+        let glyphRange = layoutManager.glyphRange(for: textContainer)
+        layoutManager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: glyphRange)
+    }
+
     private func configureTextView() {
         currentEditorFontSize = NSFont.systemFontSize
         textView.isEditable = true
         textView.isSelectable = true
-        textView.isRichText = true
+        textView.isRichText = false
         textView.importsGraphics = false
         textView.usesFindPanel = true
         textView.allowsUndo = true
@@ -277,10 +286,6 @@ final class EditorTextContainerView: NSView {
         Self.editorFont(ofSize: currentEditorFontSize)
     }
 
-    private static func defaultEditorFont(ofSize size: CGFloat) -> NSFont {
-        NSFont.systemFont(ofSize: size)
-    }
-
     private func applyDefaultTypingAttributes(using font: NSFont) {
         let paragraphStyle = Self.editorParagraphStyle()
         textView.defaultParagraphStyle = paragraphStyle
@@ -297,10 +302,6 @@ final class EditorTextContainerView: NSView {
 
     private static func editorForegroundColor() -> NSColor {
         .labelColor
-    }
-
-    private static func shouldUseMonospacedFont(for character: Character) -> Bool {
-        character.unicodeScalars.allSatisfy(\.isASCII)
     }
 
     private func configureScrollView() {

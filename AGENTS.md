@@ -187,21 +187,9 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **NeatEditor** (42 symbols, 35 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **NeatEditor** (51 symbols, 43 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
-
-## Known Limitations In This Repo
-
-- 当前仓库的 GitNexus 索引较轻，`processes` 为 0，且对部分 Swift / AppKit bridge 内部符号（尤其是私有方法、视图内部辅助方法、`NSView` 子类细粒度成员）经常只索引到文件级，不能稳定解析到符号级。
-- 已观察到的典型场景包括 `EditorTextContainerView`、`LineNumberGutterView` 这类 AppKit bridge 文件：本地代码里明明存在的方法或类型，`gitnexus_impact` / `gitnexus_context` 仍可能返回 `Target not found` / `Symbol not found`。
-- 如果 `gitnexus_impact` / `gitnexus_context` 返回 `Target not found` 或 `Symbol not found`，先不要在同一轮里反复重试多个近似名字；应记录“该符号当前未被索引”，然后退回本地代码分析。
-- 止损规则：优先尝试 1 次精确 symbol 名；若失败，可再补 1 次文件级目标（如 `EditorTextView.swift`）。若仍失败，就停止继续猜名字，不要在同一轮里为 GitNexus 反复试错。
-- 推荐降级顺序：
-  1. 用 `gitnexus_query({query: "concept"})` 看是否至少能定位到相关文件。
-  2. 用 `rg` / 直接读文件确认真实调用点、初始化路径和相邻影响面。
-  3. 继续运行 `gitnexus_detect_changes()` 做改动范围核对。
-- 当索引只到文件级时，仍然要在汇报里明确说明：`impact/context` 无法覆盖目标符号，本次风险判断来自本地代码关系与 `detect_changes`，不要假装拿到了完整调用图。
 
 ## Always Do
 

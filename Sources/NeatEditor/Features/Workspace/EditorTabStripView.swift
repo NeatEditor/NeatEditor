@@ -18,12 +18,8 @@ struct EditorTabStripView: View {
     static let minimumWindowEdge: CGFloat = {
         // Keep the window large enough for traffic lights, two tabs, and the pin accessory.
         ceil(
-            leadingPadding +
-            trailingTabScrollPadding +
-            trailingAccessoryWidth +
-            trailingAccessoryPadding +
-            (EditorTabItemView.minimumTabWidth * 2) +
-            24
+            leadingPadding + trailingTabScrollPadding + trailingAccessoryWidth
+                + trailingAccessoryPadding + (EditorTabItemView.minimumTabWidth * 2) + 24
         )
     }()
 
@@ -31,12 +27,17 @@ struct EditorTabStripView: View {
     let selectedTabID: UUID?
     let onSelectTab: (UUID) -> Void
     let onRenameTab: (UUID, String) -> Void
+    let onCloseTab: (UUID) -> Void
     @State private var selectedTabFrame: CGRect = .null
+    @State private var tabFrames: [UUID: CGRect] = [:]
     @State private var isWindowPinned = false
     @State private var editingTabID: UUID? = nil
 
     var body: some View {
         HStack(spacing: 0) {
+            TrafficLightBackgroundSpacer()
+                .frame(width: Self.leadingPadding)
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
                     ForEach($tabs) { $tab in
@@ -64,7 +65,6 @@ struct EditorTabStripView: View {
                         }
                     }
                 }
-                .padding(.leading, Self.leadingPadding)
                 .padding(.trailing, Self.trailingTabScrollPadding)
                 .padding(.top, 6)
             }
@@ -78,6 +78,9 @@ struct EditorTabStripView: View {
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
             selectedTabFrame = frame
+        }
+        .onPreferenceChange(TabFramesPreferenceKey.self) { frames in
+            tabFrames = frames
         }
         .background {
             ZStack(alignment: .bottom) {
@@ -94,10 +97,14 @@ struct EditorTabStripView: View {
         .background {
             TitleBarEventMonitor(
                 isEditing: editingTabID != nil,
-                onDismissEditing: { dismissEditing() }
+                tabFrames: tabFrames,
+                onDismissEditing: { dismissEditing() },
+                onCloseTab: onCloseTab
             )
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+        .onReceive(
+            NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)
+        ) { _ in
             dismissEditing()
         }
         .frame(height: Self.titleBarHeight)
@@ -111,6 +118,13 @@ struct EditorTabStripView: View {
             onRenameTab(tabID, newTitle)
         }
         editingTabID = nil
+    }
+}
+
+private struct TrafficLightBackgroundSpacer: View {
+    var body: some View {
+        EditorChrome.tabBarBackground
+            .allowsHitTesting(false)
     }
 }
 
@@ -179,7 +193,11 @@ struct EditorTabItemView: View {
                     if isEditing {
                         TextField("", text: $draftTitle)
                             .textFieldStyle(.plain)
-                            .font(.system(size: Self.titleFontSize, weight: isSelected ? .medium : .regular))
+                            .font(
+                                .system(
+                                    size: Self.titleFontSize,
+                                    weight: isSelected ? .medium : .regular)
+                            )
                             .focused($isFocused)
                             .labelsHidden()
                             .onSubmit {
@@ -188,7 +206,11 @@ struct EditorTabItemView: View {
                             .frame(minWidth: 40)
                     } else {
                         Text(tab.title)
-                            .font(.system(size: Self.titleFontSize, weight: isSelected ? .medium : .regular))
+                            .font(
+                                .system(
+                                    size: Self.titleFontSize,
+                                    weight: isSelected ? .medium : .regular)
+                            )
                             .foregroundColor(isSelected ? .primary : .secondary)
                     }
                 }
@@ -207,10 +229,16 @@ struct EditorTabItemView: View {
         }
         .background {
             GeometryReader { proxy in
-                Color.clear.preference(
-                    key: SelectedTabFramePreferenceKey.self,
-                    value: isSelected ? proxy.frame(in: .named(TabBarLayout.coordinateSpaceName)) : .null
-                )
+                let frame = proxy.frame(in: .named(TabBarLayout.coordinateSpaceName))
+                Color.clear
+                    .preference(
+                        key: SelectedTabFramePreferenceKey.self,
+                        value: isSelected ? frame : .null
+                    )
+                    .preference(
+                        key: TabFramesPreferenceKey.self,
+                        value: [tab.id: frame]
+                    )
             }
         }
         .onHover { hovering in
@@ -274,11 +302,13 @@ struct EditorTabItemView: View {
 
         let components = trimmedTitle.components(separatedBy: Self.invalidTitleSeparators)
         let separatorSafeTitle = components.joined(separator: "-")
-        let singleLineTitle = separatorSafeTitle
+        let singleLineTitle =
+            separatorSafeTitle
             .replacingOccurrences(of: "\r", with: " ")
             .replacingOccurrences(of: "\n", with: " ")
             .replacingOccurrences(of: "\t", with: " ")
-        let collapsedWhitespaceTitle = singleLineTitle
+        let collapsedWhitespaceTitle =
+            singleLineTitle
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
 
@@ -289,12 +319,12 @@ struct EditorTabItemView: View {
     private var tabBackground: some View {
         if isSelected {
             ConnectedTabFillShape(topInset: 6, topCornerRadius: 9, bottomJoinRadius: 9)
-                .fill(EditorChrome.editorSurface)
+                .fill(TabJoinDiagnostics.fillColor)
                 .overlay {
                     ConnectedTabBorderShape(topInset: 6, topCornerRadius: 9, bottomJoinRadius: 9)
                         .stroke(
-                            EditorChrome.border,
-                            style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round)
+                            TabJoinDiagnostics.borderColor,
+                            style: StrokeStyle(lineWidth: 1, lineCap: .butt, lineJoin: .round)
                         )
                 }
         } else if isHovering {
@@ -309,23 +339,31 @@ struct EditorTabItemView: View {
 
 private struct TitleBarEventMonitor: NSViewRepresentable {
     let isEditing: Bool
+    let tabFrames: [UUID: CGRect]
     let onDismissEditing: () -> Void
+    let onCloseTab: (UUID) -> Void
 
     func makeNSView(context: Context) -> TitleBarEventNSView {
         let view = TitleBarEventNSView()
         view.isEditing = isEditing
+        view.tabFrames = tabFrames
         view.onDismissEditing = onDismissEditing
+        view.onCloseTab = onCloseTab
         return view
     }
 
     func updateNSView(_ nsView: TitleBarEventNSView, context: Context) {
         nsView.isEditing = isEditing
+        nsView.tabFrames = tabFrames
         nsView.onDismissEditing = onDismissEditing
+        nsView.onCloseTab = onCloseTab
     }
 
     final class TitleBarEventNSView: NSView {
         var isEditing = false
+        var tabFrames: [UUID: CGRect] = [:]
         var onDismissEditing: (() -> Void)?
+        var onCloseTab: ((UUID) -> Void)?
         private var clickMonitor: Any?
 
         override func viewDidMoveToWindow() {
@@ -342,7 +380,9 @@ private struct TitleBarEventMonitor: NSViewRepresentable {
 
         private func installMonitor() {
             removeMonitor()
-            clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { [weak self] event in
+            clickMonitor = NSEvent.addLocalMonitorForEvents(
+                matching: [.leftMouseDown, .leftMouseUp, .otherMouseUp]
+            ) { [weak self] event in
                 self?.handleMouseEvent(event)
                 return event
             }
@@ -368,8 +408,9 @@ private struct TitleBarEventMonitor: NSViewRepresentable {
                 // Title bar double-click zoom on mouseUp so the SwiftUI Button
                 // action (also mouseUp) has already set the suppress flag.
                 guard event.clickCount >= 2,
-                      event.window === self.window,
-                      isClickInTitleBarRegion(event) else { return }
+                    event.window === self.window,
+                    isClickInTitleBarRegion(event)
+                else { return }
 
                 // Defer to the next run loop iteration. The Button action fires
                 // synchronously during event dispatch, so by the next iteration
@@ -381,7 +422,29 @@ private struct TitleBarEventMonitor: NSViewRepresentable {
                     }
                     self?.performTitleBarDoubleClickAction()
                 }
+            } else if event.type == .otherMouseUp, event.buttonNumber == 2 {
+                guard let tabID = tabID(at: event) else {
+                    return
+                }
+
+                DispatchQueue.main.async { [weak self] in
+                    if self?.isEditing == true {
+                        self?.onDismissEditing?()
+                    }
+                    self?.onCloseTab?(tabID)
+                }
             }
+        }
+
+        private func tabID(at event: NSEvent) -> UUID? {
+            guard event.window === self.window else {
+                return nil
+            }
+
+            let location = convert(event.locationInWindow, from: nil)
+            return tabFrames.first { _, frame in
+                frame.contains(location)
+            }?.key
         }
 
         /// Check if the click is within the title bar / tab strip region
@@ -396,17 +459,14 @@ private struct TitleBarEventMonitor: NSViewRepresentable {
         }
 
         private func performTitleBarDoubleClickAction() {
-            let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize"
+            let action =
+                UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize"
             guard action != "None", let window = self.window else { return }
             if action == "Maximize" {
                 window.zoom(nil)
             } else if action == "Minimize" {
                 window.performMiniaturize(nil)
             }
-        }
-
-        deinit {
-            removeMonitor()
         }
     }
 }
@@ -439,7 +499,34 @@ private struct SelectedTabFramePreferenceKey: PreferenceKey {
     }
 }
 
+private struct TabFramesPreferenceKey: PreferenceKey {
+    static let defaultValue: [UUID: CGRect] = [:]
+
+    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, next in next })
+    }
+}
+
+private enum TabJoinDiagnostics {
+    static let isEnabled = false
+
+    static var fillColor: Color {
+        isEnabled ? .green.opacity(0.35) : EditorChrome.editorSurface
+    }
+
+    static var borderColor: Color {
+        isEnabled ? .blue : EditorChrome.border
+    }
+
+    static var dividerColor: Color {
+        isEnabled ? .red : EditorChrome.border
+    }
+}
+
 private struct TabBarDividerOverlay: View {
+    private static let leadingSelectedTabJoinClearance: CGFloat = 3.0
+    private static let trailingSelectedTabJoinClearance: CGFloat = 3.0
+
     let selectedTabFrame: CGRect
 
     var body: some View {
@@ -453,8 +540,18 @@ private struct TabBarDividerOverlay: View {
                     return
                 }
 
-                let leftEnd = max(0, min(selectedTabFrame.minX, proxy.size.width))
-                let rightStart = max(0, min(selectedTabFrame.maxX, proxy.size.width))
+                let leftEnd = max(
+                    0,
+                    min(
+                        selectedTabFrame.minX - Self.leadingSelectedTabJoinClearance,
+                        proxy.size.width)
+                )
+                let rightStart = max(
+                    0,
+                    min(
+                        selectedTabFrame.maxX + Self.trailingSelectedTabJoinClearance,
+                        proxy.size.width)
+                )
 
                 if leftEnd > 0 {
                     path.move(to: CGPoint(x: 0, y: y))
@@ -466,13 +563,15 @@ private struct TabBarDividerOverlay: View {
                     path.addLine(to: CGPoint(x: proxy.size.width, y: y))
                 }
             }
-            .stroke(EditorChrome.border, lineWidth: 1)
+            .stroke(TabJoinDiagnostics.dividerColor, lineWidth: 1)
         }
         .allowsHitTesting(false)
     }
 }
 
 private struct ConnectedTabFillShape: Shape {
+    private static let bottomLift: CGFloat = 0.5
+
     let topInset: CGFloat
     let topCornerRadius: CGFloat
     let bottomJoinRadius: CGFloat
@@ -481,11 +580,12 @@ private struct ConnectedTabFillShape: Shape {
         let inset = min(topInset, rect.width / 4)
         let topRadius = min(topCornerRadius, rect.width / 2, rect.height / 2)
         let bottomRadius = min(bottomJoinRadius, rect.width / 2, rect.height / 2)
+        let bottomY = rect.maxY - Self.bottomLift
         var path = Path()
 
-        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.move(to: CGPoint(x: rect.minX, y: bottomY))
         path.addArc(
-            tangent1End: CGPoint(x: rect.minX + inset, y: rect.maxY),
+            tangent1End: CGPoint(x: rect.minX + inset, y: bottomY),
             tangent2End: CGPoint(x: rect.minX + inset, y: rect.minY),
             radius: bottomRadius
         )
@@ -499,19 +599,21 @@ private struct ConnectedTabFillShape: Shape {
             to: CGPoint(x: rect.maxX - inset, y: rect.minY + topRadius),
             control: CGPoint(x: rect.maxX - inset, y: rect.minY)
         )
-        path.addLine(to: CGPoint(x: rect.maxX - inset, y: rect.maxY - bottomRadius))
+        path.addLine(to: CGPoint(x: rect.maxX - inset, y: bottomY - bottomRadius))
         path.addArc(
-            tangent1End: CGPoint(x: rect.maxX - inset, y: rect.maxY),
-            tangent2End: CGPoint(x: rect.maxX, y: rect.maxY),
+            tangent1End: CGPoint(x: rect.maxX - inset, y: bottomY),
+            tangent2End: CGPoint(x: rect.maxX, y: bottomY),
             radius: bottomRadius
         )
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: bottomY))
 
         return path
     }
 }
 
 private struct ConnectedTabBorderShape: Shape {
+    private static let bottomLift: CGFloat = 0.5
+
     let topInset: CGFloat
     let topCornerRadius: CGFloat
     let bottomJoinRadius: CGFloat
@@ -520,28 +622,37 @@ private struct ConnectedTabBorderShape: Shape {
         let inset = min(topInset, rect.width / 4)
         let topRadius = min(topCornerRadius, rect.width / 2, rect.height / 2)
         let bottomRadius = min(bottomJoinRadius, rect.width / 2, rect.height / 2)
+        let bottomY = rect.maxY - Self.bottomLift
+        let leftTopStartX = rect.minX + inset + topRadius
+        let rightTopStartX = rect.maxX - inset - topRadius
+        let centerX = rect.midX
         var path = Path()
 
-        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.move(to: CGPoint(x: centerX, y: rect.minY))
+        path.addLine(to: CGPoint(x: leftTopStartX, y: rect.minY))
         path.addArc(
-            tangent1End: CGPoint(x: rect.minX + inset, y: rect.maxY),
-            tangent2End: CGPoint(x: rect.minX + inset, y: rect.minY),
+            tangent1End: CGPoint(x: rect.minX + inset, y: rect.minY),
+            tangent2End: CGPoint(x: rect.minX + inset, y: rect.minY + topRadius),
+            radius: topRadius
+        )
+        path.addLine(to: CGPoint(x: rect.minX + inset, y: bottomY - bottomRadius))
+        path.addArc(
+            tangent1End: CGPoint(x: rect.minX + inset, y: bottomY),
+            tangent2End: CGPoint(x: rect.minX, y: bottomY),
             radius: bottomRadius
         )
-        path.addLine(to: CGPoint(x: rect.minX + inset, y: rect.minY + topRadius))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.minX + inset + topRadius, y: rect.minY),
-            control: CGPoint(x: rect.minX + inset, y: rect.minY)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX - inset - topRadius, y: rect.minY))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX - inset, y: rect.minY + topRadius),
-            control: CGPoint(x: rect.maxX - inset, y: rect.minY)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX - inset, y: rect.maxY - bottomRadius))
+
+        path.move(to: CGPoint(x: centerX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rightTopStartX, y: rect.minY))
         path.addArc(
-            tangent1End: CGPoint(x: rect.maxX - inset, y: rect.maxY),
-            tangent2End: CGPoint(x: rect.maxX, y: rect.maxY),
+            tangent1End: CGPoint(x: rect.maxX - inset, y: rect.minY),
+            tangent2End: CGPoint(x: rect.maxX - inset, y: rect.minY + topRadius),
+            radius: topRadius
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - inset, y: bottomY - bottomRadius))
+        path.addArc(
+            tangent1End: CGPoint(x: rect.maxX - inset, y: bottomY),
+            tangent2End: CGPoint(x: rect.maxX, y: bottomY),
             radius: bottomRadius
         )
 
@@ -553,7 +664,7 @@ private struct ConnectedTabBorderShape: Shape {
     @Previewable @State var tabs = [
         EditorTab(id: UUID(), title: "Untitled 1"),
         EditorTab(id: UUID(), title: "Config.yml"),
-        EditorTab(id: UUID(), title: "Readme.md")
+        EditorTab(id: UUID(), title: "Readme.md"),
     ]
     @Previewable @State var selectedTabID: UUID?
 
@@ -568,6 +679,12 @@ private struct ConnectedTabBorderShape: Shape {
                 }
 
                 tabs[index].title = newTitle
+            },
+            onCloseTab: { id in
+                tabs.removeAll { $0.id == id }
+                if selectedTabID == id {
+                    selectedTabID = tabs.first?.id
+                }
             }
         )
         Spacer()

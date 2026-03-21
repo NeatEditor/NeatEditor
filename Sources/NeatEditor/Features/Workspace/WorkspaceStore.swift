@@ -12,6 +12,11 @@ final class WorkspaceStore {
         static let step: CGFloat = 1
     }
 
+    private struct ClosedTabSnapshot {
+        let tab: EditorTab
+        let index: Int
+    }
+
     private static let logger = Logger(
         subsystem: "com.geraltgraham.NeatEditor",
         category: "Workspace"
@@ -19,17 +24,32 @@ final class WorkspaceStore {
 
     var tabs: [EditorTab] = []
     var selectedTabID: UUID?
-    var editorFontSize: CGFloat = NSFont.systemFontSize
+    var editorFontSize: CGFloat = 13 {
+        didSet {
+            saveState()
+        }
+    }
+    var tabBehavior: TabBehavior = .spaces2 {
+        didSet {
+            saveState()
+        }
+    }
     var isSearchBarPresented = false
     var searchQuery = ""
+    var isRegexSearchEnabled = false
     var searchRequestID = 0
     var searchFocusRequestID = 0
+    var canReopenClosedTab: Bool {
+        !closedTabs.isEmpty
+    }
 
     @ObservationIgnored
     private let persistenceService: DocumentPersistenceService
 
     @ObservationIgnored
     private let autoSaveScheduler: AutoSaveScheduler
+
+    private var closedTabs: [ClosedTabSnapshot] = []
 
     init(
         persistenceService: DocumentPersistenceService = DocumentPersistenceService(),
@@ -104,22 +124,56 @@ final class WorkspaceStore {
     }
 
     func saveAndCloseCurrentDocument() {
-        guard let id = selectedTabID,
-              let index = tabs.firstIndex(where: { $0.id == id }) else {
+        guard let id = selectedTabID else {
+            return
+        }
+
+        closeDocument(id: id)
+    }
+
+    func closeDocument(id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else {
             return
         }
 
         saveDocument(id: id)
         autoSaveScheduler.cancel(for: id)
 
+        let closedTab = tabs[index]
+        if !closedTab.isSettings {
+            closedTabs.append(ClosedTabSnapshot(tab: closedTab, index: index))
+        }
+
         tabs.remove(at: index)
 
-        if tabs.indices.contains(index) {
-            selectedTabID = tabs[index].id
-        } else {
-            selectedTabID = tabs.last?.id
+        if selectedTabID == id {
+            if tabs.indices.contains(index) {
+                selectedTabID = tabs[index].id
+            } else {
+                selectedTabID = tabs.last?.id
+            }
         }
+
         saveState()
+    }
+
+    func reopenLastClosedDocument() {
+        while let closedTabSnapshot = closedTabs.popLast() {
+            saveSelectedDocumentIfNeeded()
+
+            if let fileURL = closedTabSnapshot.tab.fileURL,
+               let existingTabID = existingTabID(for: fileURL) {
+                selectedTabID = existingTabID
+                saveState()
+                return
+            }
+
+            let restoredIndex = min(closedTabSnapshot.index, tabs.count)
+            tabs.insert(closedTabSnapshot.tab, at: restoredIndex)
+            selectedTabID = closedTabSnapshot.tab.id
+            saveState()
+            return
+        }
     }
     
     func openSettings() {
@@ -164,6 +218,22 @@ final class WorkspaceStore {
 
     func dismissSearchBar() {
         isSearchBarPresented = false
+    }
+
+    func toggleRegexSearch() {
+        isRegexSearchEnabled.toggle()
+
+        let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else {
+            return
+        }
+
+        if searchQuery != trimmedQuery {
+            searchQuery = trimmedQuery
+        }
+
+        isSearchBarPresented = true
+        searchRequestID += 1
     }
 
     func submitSearch() {
@@ -219,6 +289,7 @@ final class WorkspaceStore {
         }
 
         editorFontSize = nextSize
+        saveState()
     }
 
     private func saveSelectedDocumentIfNeeded() {
@@ -263,6 +334,8 @@ final class WorkspaceStore {
         let tabs: [TabState]
         let selectedFileURL: URL?
         let isSettingsSelected: Bool
+        let editorFontSize: CGFloat
+        let tabBehavior: TabBehavior
     }
 
     private static let stateKey = "WorkspaceState"
@@ -286,7 +359,9 @@ final class WorkspaceStore {
         let state = WorkspaceState(
             tabs: stateTabs,
             selectedFileURL: selectedFileURL,
-            isSettingsSelected: isSettingsSelected
+            isSettingsSelected: isSettingsSelected,
+            editorFontSize: editorFontSize,
+            tabBehavior: tabBehavior
         )
         
         do {
@@ -312,6 +387,9 @@ final class WorkspaceStore {
 
     private func restoreState(_ state: WorkspaceState) {
         var restoredSelectedTabID: UUID?
+        
+        editorFontSize = state.editorFontSize
+        tabBehavior = state.tabBehavior
         
         for tabState in state.tabs {
             if tabState.isSettings {

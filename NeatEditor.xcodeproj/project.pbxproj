@@ -24,6 +24,7 @@
 		AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */; };
 		B94CDB60C07A6AB1960668D4 /* ExternalFileOpenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */; };
 		DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */; };
+		F294F12E2A20AE8FFE734E66 /* TabBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BC26D5C7240FEF483712F5 /* TabBehavior.swift */; };
 		F9F0759B221E03E66297E6D5 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */; };
 /* End PBXBuildFile section */
 
@@ -33,6 +34,7 @@
 		14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSaveScheduler.swift; sourceTree = "<group>"; };
 		32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalFileOpenCoordinator.swift; sourceTree = "<group>"; };
 		3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleBarTrafficLightAlignmentView.swift; sourceTree = "<group>"; };
+		57BC26D5C7240FEF483712F5 /* TabBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBehavior.swift; sourceTree = "<group>"; };
 		60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTabStripView.swift; sourceTree = "<group>"; };
 		63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStore.swift; sourceTree = "<group>"; };
 		64C1E4F1C5E0852265B8A3A4 /* WorkspaceCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceCommands.swift; sourceTree = "<group>"; };
@@ -104,6 +106,7 @@
 			children = (
 				159583F8B97641E58C7DD68F /* App */,
 				DFBABB36B5A75980E9007BC5 /* Features */,
+				8A73940DB02FD1D6108FDF13 /* Models */,
 				A22CFA8E6AABC86E0B1F852D /* Services */,
 				2EBD0DB1ACC72C10C561D621 /* SharedUI */,
 				CC4981C6B05519CD1877B4D5 /* Assets.xcassets */,
@@ -117,6 +120,14 @@
 				6C4008B94B5B9575C7D4C05B /* NeatEditor */,
 			);
 			path = Sources;
+			sourceTree = "<group>";
+		};
+		8A73940DB02FD1D6108FDF13 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				57BC26D5C7240FEF483712F5 /* TabBehavior.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		A22CFA8E6AABC86E0B1F852D /* Services */ = {
@@ -254,6 +265,7 @@
 				260FB1D768B914BEC7E705CE /* LineNumberGutterView.swift in Sources */,
 				28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */,
 				85E7BB7174B4D000CEFDE8A6 /* SettingsView.swift in Sources */,
+				F294F12E2A20AE8FFE734E66 /* TabBehavior.swift in Sources */,
 				A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */,
 				16EC1F059C67919FE7417ECA /* WorkspaceCommands.swift in Sources */,
 				DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */,
