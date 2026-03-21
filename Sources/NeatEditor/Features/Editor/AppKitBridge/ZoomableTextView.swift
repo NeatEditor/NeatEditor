@@ -1,6 +1,11 @@
 import AppKit
 
 final class ZoomableTextView: NSTextView {
+    private enum EditorKeyCode {
+        static let returnKey: UInt16 = 36
+        static let keypadEnter: UInt16 = 76
+    }
+
     private enum ZoomKeyCode {
         static let equal: UInt16 = 24
         static let minus: UInt16 = 27
@@ -30,6 +35,10 @@ final class ZoomableTextView: NSTextView {
 
     override func keyDown(with event: NSEvent) {
         if handleZoomShortcut(for: event) {
+            return
+        }
+
+        if handleMoveToNextLineShortcut(for: event) {
             return
         }
 
@@ -110,6 +119,56 @@ final class ZoomableTextView: NSTextView {
         default:
             return false
         }
+    }
+
+    private func handleMoveToNextLineShortcut(for event: NSEvent) -> Bool {
+        guard !hasMarkedText(),
+              isMoveToNextLineShortcut(event) else {
+            return false
+        }
+
+        moveInsertionPointToNextLine()
+        return true
+    }
+
+    private func isMoveToNextLineShortcut(_ event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let disallowedModifiers = modifiers.subtracting([.shift, .capsLock])
+
+        guard modifiers.contains(.shift),
+              disallowedModifiers.isEmpty else {
+            return false
+        }
+
+        switch event.keyCode {
+        case EditorKeyCode.returnKey, EditorKeyCode.keypadEnter:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func moveInsertionPointToNextLine() {
+        let currentText = string as NSString
+        let insertionLocation = min(selectedRange().location, currentText.length)
+        let currentLineRange = currentText.lineRange(
+            for: NSRange(location: insertionLocation, length: 0)
+        )
+        // 计算当前行结尾（不含换行符）的位置
+        let lineEnd = NSMaxRange(currentLineRange)
+        let lineEndWithoutNewline: Int
+        if lineEnd > 0 {
+            let lastChar = currentText.character(at: lineEnd - 1)
+            // 0x0A = LF, 0x0D = CR, 0x2028 = Unicode line separator
+            lineEndWithoutNewline = (lastChar == 0x0A || lastChar == 0x0D || lastChar == 0x2028)
+                ? lineEnd - 1
+                : lineEnd
+        } else {
+            lineEndWithoutNewline = lineEnd
+        }
+        // 将光标移到行末（不含换行符），再插入换行
+        setSelectedRange(NSRange(location: lineEndWithoutNewline, length: 0))
+        insertText("\n", replacementRange: selectedRange())
     }
 
     private func prioritizedPasteboardTypes(

@@ -28,6 +28,7 @@ struct EditorTextView: NSViewRepresentable {
 
         textView.delegate = context.coordinator
         textView.string = text
+        containerView.synchronizeLineNumbersToCurrentText()
         textView.onOpenFiles = onOpenFiles
         textView.tabBehavior = tabBehavior
         containerView.applyEditorTextAttributes()
@@ -55,6 +56,7 @@ struct EditorTextView: NSViewRepresentable {
             context.coordinator.isSyncingFromSwiftUI = true
             containerView.textView.string = text
             context.coordinator.isSyncingFromSwiftUI = false
+            containerView.synchronizeLineNumbersToCurrentText()
             containerView.applyEditorTextAttributes()
         }
 

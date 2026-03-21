@@ -77,7 +77,19 @@ struct DocumentPersistenceService {
         return EditorTab(
             title: normalizedFileURL.lastPathComponent,
             content: content,
-            fileURL: normalizedFileURL
+            fileURL: normalizedFileURL,
+            isContentLoaded: true
+        )
+    }
+
+    func openDocumentLazily(at fileURL: URL) -> EditorTab {
+        let normalizedFileURL = normalizedFileURL(for: fileURL)
+
+        return EditorTab(
+            title: normalizedFileURL.lastPathComponent,
+            content: "",
+            fileURL: normalizedFileURL,
+            isContentLoaded: false
         )
     }
 

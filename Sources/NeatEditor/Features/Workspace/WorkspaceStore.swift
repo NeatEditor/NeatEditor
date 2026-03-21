@@ -3,6 +3,20 @@ import Observation
 import AppKit
 import OSLog
 
+enum AppLanguage: String, Codable, CaseIterable {
+    case system = "system"
+    case english = "en"
+    case simplifiedChinese = "zh-Hans"
+
+    var localizedName: String {
+        switch self {
+        case .system: return "System Default"
+        case .english: return "English"
+        case .simplifiedChinese: return "Simplified Chinese"
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class WorkspaceStore {
@@ -34,6 +48,13 @@ final class WorkspaceStore {
             saveState()
         }
     }
+    var appLanguage: AppLanguage = .system {
+        didSet {
+            updateAppleLanguages()
+            saveState()
+        }
+    }
+    var isLanguageChangePendingRestart = false
     var isSearchBarPresented = false
     var searchQuery = ""
     var isRegexSearchEnabled = false
@@ -42,6 +63,8 @@ final class WorkspaceStore {
     var canReopenClosedTab: Bool {
         !closedTabs.isEmpty
     }
+
+    private var isRestoringState = false
 
     @ObservationIgnored
     private let persistenceService: DocumentPersistenceService
@@ -72,6 +95,7 @@ final class WorkspaceStore {
         let newTab = EditorTab(title: newTitle)
         tabs.append(newTab)
         selectedTabID = newTab.id
+        loadTabContentIfNeeded(id: newTab.id)
         saveState()
     }
 
@@ -91,19 +115,14 @@ final class WorkspaceStore {
                 continue
             }
 
-            do {
-                let openedTab = try persistenceService.openDocument(at: fileURL)
-                tabs.append(openedTab)
-                targetTabID = openedTab.id
-            } catch {
-                Self.logger.error(
-                    "Failed to open document at \(fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)"
-                )
-            }
+            let openedTab = persistenceService.openDocumentLazily(at: fileURL)
+            tabs.append(openedTab)
+            targetTabID = openedTab.id
         }
 
         if let targetTabID {
             selectedTabID = targetTabID
+            loadTabContentIfNeeded(id: targetTabID)
         }
         saveState()
     }
@@ -115,7 +134,25 @@ final class WorkspaceStore {
 
         saveSelectedDocumentIfNeeded()
         selectedTabID = id
+        loadTabContentIfNeeded(id: id)
         saveState()
+    }
+
+    func selectTab(relativeOffset: Int) {
+        guard relativeOffset != 0,
+            let selectedTabID,
+            let selectedIndex = tabs.firstIndex(where: { $0.id == selectedTabID })
+        else {
+            return
+        }
+
+        let lastIndex = tabs.index(before: tabs.endIndex)
+        let targetIndex = min(max(selectedIndex + relativeOffset, tabs.startIndex), lastIndex)
+        guard targetIndex != selectedIndex else {
+            return
+        }
+
+        selectTab(tabs[targetIndex].id)
     }
 
     func saveCurrentDocument() {
@@ -152,8 +189,28 @@ final class WorkspaceStore {
             } else {
                 selectedTabID = tabs.last?.id
             }
+            if let newSelection = selectedTabID {
+                loadTabContentIfNeeded(id: newSelection)
+            }
         }
 
+        saveState()
+    }
+
+    func closeOtherDocuments(keeping id: UUID) {
+        saveAllDocuments()
+        let idsToClose = tabs.filter { $0.id != id }.map { $0.id }
+        for closeID in idsToClose {
+            guard let index = tabs.firstIndex(where: { $0.id == closeID }) else { continue }
+            autoSaveScheduler.cancel(for: closeID)
+            let closedTab = tabs[index]
+            if !closedTab.isSettings {
+                closedTabs.append(ClosedTabSnapshot(tab: closedTab, index: index))
+            }
+            tabs.remove(at: index)
+        }
+        selectedTabID = id
+        loadTabContentIfNeeded(id: id)
         saveState()
     }
 
@@ -171,6 +228,7 @@ final class WorkspaceStore {
             let restoredIndex = min(closedTabSnapshot.index, tabs.count)
             tabs.insert(closedTabSnapshot.tab, at: restoredIndex)
             selectedTabID = closedTabSnapshot.tab.id
+            loadTabContentIfNeeded(id: closedTabSnapshot.tab.id)
             saveState()
             return
         }
@@ -187,6 +245,40 @@ final class WorkspaceStore {
         let settingsTab = EditorTab(title: "Settings", isSettings: true)
         tabs.append(settingsTab)
         selectedTabID = settingsTab.id
+        loadTabContentIfNeeded(id: settingsTab.id)
+        saveState()
+    }
+
+    func moveToTrash(id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }),
+              !tabs[index].isSettings,
+              let fileURL = tabs[index].fileURL
+        else { return }
+
+        autoSaveScheduler.cancel(for: id)
+
+        do {
+            try FileManager.default.trashItem(at: fileURL, resultingItemURL: nil)
+        } catch {
+            Self.logger.error("Failed to trash file at \(fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return
+        }
+
+        let closedTab = tabs[index]
+        closedTabs.append(ClosedTabSnapshot(tab: closedTab, index: index))
+        tabs.remove(at: index)
+
+        if selectedTabID == id {
+            if tabs.indices.contains(index) {
+                selectedTabID = tabs[index].id
+            } else {
+                selectedTabID = tabs.last?.id
+            }
+            if let newSelection = selectedTabID {
+                loadTabContentIfNeeded(id: newSelection)
+            }
+        }
+
         saveState()
     }
 
@@ -254,6 +346,8 @@ final class WorkspaceStore {
     func saveDocument(id: UUID) {
         guard let index = tabs.firstIndex(where: { $0.id == id }), !tabs[index].isSettings else { return }
 
+        guard tabs[index].isContentLoaded else { return }
+
         do {
             tabs[index] = try persistenceService.save(tab: tabs[index])
             saveState()
@@ -290,6 +384,38 @@ final class WorkspaceStore {
 
         editorFontSize = nextSize
         saveState()
+    }
+
+    private func loadTabContentIfNeeded(id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }), 
+              !tabs[index].isContentLoaded, 
+              let fileURL = tabs[index].fileURL else {
+            return
+        }
+        
+        // Mark as loaded immediately so we don't trigger multiple loads
+        tabs[index].isContentLoaded = true
+        
+        let normalizedURL = persistenceService.normalizedFileURL(for: fileURL)
+        
+        Task {
+            do {
+                let content = try await Task.detached(priority: .userInitiated) {
+                    let data = try Data(contentsOf: normalizedURL, options: .mappedIfSafe)
+                    guard let text = String(data: data, encoding: .utf8) else {
+                        throw CocoaError(.fileReadInapplicableStringEncoding)
+                    }
+                    return text
+                }.value
+                
+                guard let currentIndex = self.tabs.firstIndex(where: { $0.id == id }) else { return }
+                self.tabs[currentIndex].content = content
+            } catch {
+                Self.logger.error("Failed to load document content lazily at \(fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                guard let currentIndex = self.tabs.firstIndex(where: { $0.id == id }) else { return }
+                self.tabs[currentIndex].content = "Failed to load document: \(error.localizedDescription)"
+            }
+        }
     }
 
     private func saveSelectedDocumentIfNeeded() {
@@ -336,11 +462,14 @@ final class WorkspaceStore {
         let isSettingsSelected: Bool
         let editorFontSize: CGFloat
         let tabBehavior: TabBehavior
+        let appLanguage: AppLanguage?
     }
 
     private static let stateKey = "WorkspaceState"
 
     private func saveState() {
+        guard !isRestoringState else { return }
+
         let stateTabs = tabs.map { WorkspaceState.TabState(fileURL: $0.fileURL, isSettings: $0.isSettings) }
         
         var selectedFileURL: URL?
@@ -361,7 +490,8 @@ final class WorkspaceStore {
             selectedFileURL: selectedFileURL,
             isSettingsSelected: isSettingsSelected,
             editorFontSize: editorFontSize,
-            tabBehavior: tabBehavior
+            tabBehavior: tabBehavior,
+            appLanguage: appLanguage
         )
         
         do {
@@ -386,10 +516,16 @@ final class WorkspaceStore {
     }
 
     private func restoreState(_ state: WorkspaceState) {
+        isRestoringState = true
+        defer { isRestoringState = false }
+
         var restoredSelectedTabID: UUID?
         
         editorFontSize = state.editorFontSize
         tabBehavior = state.tabBehavior
+        if let loadedLanguage = state.appLanguage {
+            appLanguage = loadedLanguage
+        }
         
         for tabState in state.tabs {
             if tabState.isSettings {
@@ -399,16 +535,12 @@ final class WorkspaceStore {
                     restoredSelectedTabID = settingsTab.id
                 }
             } else if let fileURL = tabState.fileURL {
-                do {
-                    let openedTab = try persistenceService.openDocument(at: fileURL)
-                    tabs.append(openedTab)
-                    
-                    if let selectedFileURL = state.selectedFileURL,
-                       persistenceService.normalizedFileURL(for: selectedFileURL) == persistenceService.normalizedFileURL(for: fileURL) {
-                        restoredSelectedTabID = openedTab.id
-                    }
-                } catch {
-                    Self.logger.error("Failed to restore document at \(fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                let openedTab = persistenceService.openDocumentLazily(at: fileURL)
+                tabs.append(openedTab)
+                
+                if let selectedFileURL = state.selectedFileURL,
+                   persistenceService.normalizedFileURL(for: selectedFileURL) == persistenceService.normalizedFileURL(for: fileURL) {
+                    restoredSelectedTabID = openedTab.id
                 }
             }
         }
@@ -417,8 +549,29 @@ final class WorkspaceStore {
             createNewDocument()
         } else if let restoredSelectedTabID {
             selectedTabID = restoredSelectedTabID
+            loadTabContentIfNeeded(id: restoredSelectedTabID)
         } else {
             selectedTabID = tabs.first?.id
+            if let id = selectedTabID {
+                loadTabContentIfNeeded(id: id)
+            }
+        }
+    }
+
+    private func updateAppleLanguages() {
+        // Only update if it actually differs from what's currently in UserDefaults
+        // to avoid triggering "restart required" continuously.
+        if appLanguage == .system {
+            if UserDefaults.standard.object(forKey: "AppleLanguages") != nil {
+                UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+                isLanguageChangePendingRestart = true
+            }
+        } else {
+            let currentLanguages = UserDefaults.standard.stringArray(forKey: "AppleLanguages")
+            if currentLanguages?.first != appLanguage.rawValue {
+                UserDefaults.standard.set([appLanguage.rawValue], forKey: "AppleLanguages")
+                isLanguageChangePendingRestart = true
+            }
         }
     }
 }

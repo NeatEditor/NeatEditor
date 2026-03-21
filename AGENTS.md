@@ -30,7 +30,7 @@
 - 先读相关文件，不要凭猜测做大改。
 - 仅修改与任务直接相关的文件，避免顺手重构无关代码。
 - 如果改动影响 `project.yml`，必须重新生成工程。
-- 改完后至少做一次构建验证；若改动影响运行流程，也要重新启动 App。
+- 改完后至少做一次构建验证；若改动影响运行流程，也要将新构建出的 App 替换到 `/Applications/NeatEditor.app` 后再启动验证。
 
 ## 常用命令
 ### 工程生成
@@ -56,11 +56,13 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - `swiftlint` 在当前环境中未安装，不要假设它可用。
 
 ### 运行 App
-先执行上面的构建命令，然后关闭旧进程并启动新版本：
+先执行上面的构建命令，然后关闭旧进程，用新构建产物替换 `/Applications/NeatEditor.app`，再从 `/Applications` 启动：
 ```bash
 pkill -x "NeatEditor" || true
+rm -rf "/Applications/NeatEditor.app"
+ditto "build/DerivedData/Build/Products/Debug/NeatEditor.app" "/Applications/NeatEditor.app"
 for attempt in 1 2 3; do
-    if open "build/DerivedData/Build/Products/Debug/NeatEditor.app"; then
+    if open "/Applications/NeatEditor.app"; then
         break
     fi
     if [ "$attempt" -eq 3 ]; then
@@ -71,6 +73,7 @@ for attempt in 1 2 3; do
 done
 ```
 - 对 UI、窗口行为、命令菜单、保存流程做了修改时，优先执行这组命令验证。
+- 启动验证时，以 `/Applications/NeatEditor.app` 作为唯一准入版本，不要直接打开 `build/DerivedData` 下的产物。
 - 如果 `open` 失败，必须继续重试 2 次；只有连续 3 次都失败时，才可以向用户报告无法启动。
 
 ### 测试
@@ -150,6 +153,11 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - 不要只 `print(error)` 然后吞掉错误；更推荐把错误提升到调用层，或落到统一日志/提示。
 - 文件 IO、保存、加载这类逻辑必须考虑失败路径。
 
+### 极致的启动速度 (Ultimate Startup Speed)
+- 严禁在 `@main` 或视图初始化等应用启动关键路径上，进行任何多余的同步文件 I/O 或阻塞操作。
+- 任何耗时的文档加载必须采用**懒加载 (Lazy Load)**方案，如果首屏需要展示内容，必须**异步加载 (Async Load)**内容以确保主线程瞬间完成首帧渲染。
+- 对于文件读取，尽可能使用 `Data(contentsOf:options:)` 结合 `.mappedIfSafe` 内存映射（mmap）技术，推迟物理内存分配并将文件 I/O 托付给操作系统的分页机制。
+
 ### 注释与文档
 - 只在“意图不明显”或“约束容易误解”时加注释。
 - 公共 API、复杂算法、重要状态机优先使用 `///` 文档注释。
@@ -179,8 +187,8 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 ## Agent 工作方式
 - 先读上下文，再改代码。
 - 尽量小步提交，避免把“修功能”和“重排格式”混在一起。
-- 完成修改后至少执行一次构建；如果变更影响运行流程，再重启 App 验证。
-- 重启 App 时，如果 `open` 启动失败，必须再重试 2 次；只有连续 3 次都失败时，才可结束并明确说明启动失败。
+- 完成修改后至少执行一次构建；如果变更影响运行流程，先用新构建产物替换 `/Applications/NeatEditor.app`，再启动该版本验证。
+- 重启 App 时，必须从 `/Applications/NeatEditor.app` 启动；如果 `open` 启动失败，必须再重试 2 次；只有连续 3 次都失败时，才可结束并明确说明启动失败。
 - 若测试仍未配置，不要谎称已跑测试；应明确说明“已构建/已 analyze，但 test action 尚不存在”。
 - 若你新增了测试设施，请同步更新本文件中的命令示例。
 

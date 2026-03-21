@@ -149,6 +149,11 @@ final class LineNumberGutterView: NSView {
         needsDisplay = true
     }
 
+    func synchronizeLineMetrics() {
+        rebuildLineMetrics()
+        needsDisplay = true
+    }
+
     static var separatorColor: NSColor {
         NSColor.separatorColor.withAlphaComponent(0.35)
     }

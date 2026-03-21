@@ -65,6 +65,7 @@ final class EditorTextContainerView: NSView {
         self.onDecreaseFontSize = onDecreaseFontSize
 
         super.init(frame: .zero)
+        self.focusRingType = .none
 
         configureTextView()
         configureScrollView()
@@ -85,6 +86,11 @@ final class EditorTextContainerView: NSView {
         let gutterWidth = lineNumberView.requiredWidth
         gutterWidthConstraint?.constant = gutterWidth
         lineNumberView.needsDisplay = true
+    }
+
+    func synchronizeLineNumbersToCurrentText() {
+        lineNumberView.synchronizeLineMetrics()
+        refreshLineNumbers()
     }
 
     func applyFontSize(_ fontSize: CGFloat) {
@@ -266,6 +272,7 @@ final class EditorTextContainerView: NSView {
         )
         textView.minSize = NSSize(width: 0, height: 0)
         textView.autoresizingMask = [.width]
+        textView.focusRingType = .none
         updateTextViewColors()
         applyDefaultTypingAttributes(using: editorMonospacedFont())
 
@@ -315,6 +322,7 @@ final class EditorTextContainerView: NSView {
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         scrollView.contentView.postsBoundsChangedNotifications = true
+        scrollView.focusRingType = .none
     }
 
     private func configureLayout() {

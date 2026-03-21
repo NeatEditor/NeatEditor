@@ -1,0 +1,39 @@
+"New" = "New";
+"New Tab" = "New Tab";
+"Open..." = "Open...";
+"Settings..." = "Settings...";
+"Save" = "Save";
+"Close Tab" = "Close Tab";
+"Reopen Closed Tab" = "Reopen Closed Tab";
+"Find" = "Find";
+"View" = "View";
+"Zoom In" = "Zoom In";
+"Zoom Out" = "Zoom Out";
+
+"No Document Selected" = "No Document Selected";
+"Search" = "Search";
+"Disable Regular Expression Search" = "Disable Regular Expression Search";
+"Enable Regular Expression Search" = "Enable Regular Expression Search";
+"Close Search" = "Close Search";
+
+"Settings" = "Settings";
+"Editor" = "Editor";
+"Tab Behavior" = "Tab Behavior";
+"Language" = "Language";
+"System Default" = "System Default";
+"English" = "English";
+"Simplified Chinese" = "Simplified Chinese";
+"A restart is required for language changes to take effect." = "A restart is required for language changes to take effect.";
+
+"关闭其他标签" = "Close Other Tabs";
+"移至废纸篓" = "Move to Trash";
+"取消" = "Cancel";
+"\"%@\" 将被移至废纸篓，可从废纸篓还原。" = "\"%@\" will be moved to the Trash and can be restored from there.";
+"Disable Always on Top" = "Disable Always on Top";
+"Enable Always on Top" = "Enable Always on Top";
+
+"Untitled" = "Untitled";
+
+"Tab" = "Tab";
+"2 Spaces" = "2 Spaces";
+"4 Spaces" = "4 Spaces";

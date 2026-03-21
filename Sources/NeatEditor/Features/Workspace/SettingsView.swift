@@ -4,7 +4,6 @@ struct SettingsView: View {
     @Environment(WorkspaceStore.self) private var workspaceStore
     @Environment(\.colorScheme) private var colorScheme
     
-    private let presetFontSizes: [CGFloat] = [10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 28, 36]
 
     var body: some View {
         ScrollView {
@@ -20,12 +19,12 @@ struct SettingsView: View {
                     
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("Font Size")
+                            Text("Tab Behavior")
                                 .frame(width: 100, alignment: .leading)
                             
-                            Picker("", selection: Bindable(workspaceStore).editorFontSize) {
-                                ForEach(presetFontSizes, id: \.self) { size in
-                                    Text("\(Int(size)) pt").tag(size)
+                            Picker("", selection: Bindable(workspaceStore).tabBehavior) {
+                                ForEach(TabBehavior.allCases, id: \.self) { behavior in
+                                    Text(LocalizedStringKey(behavior.rawValue)).tag(behavior)
                                 }
                             }
                             .frame(width: 120)
@@ -33,21 +32,25 @@ struct SettingsView: View {
                             Spacer()
                         }
                         
-                        Divider()
-                            .padding(.vertical, 4)
-                        
                         HStack {
-                            Text("Tab Behavior")
+                            Text("Language")
                                 .frame(width: 100, alignment: .leading)
                             
-                            Picker("", selection: Bindable(workspaceStore).tabBehavior) {
-                                ForEach(TabBehavior.allCases, id: \.self) { behavior in
-                                    Text(behavior.rawValue).tag(behavior)
+                            Picker("", selection: Bindable(workspaceStore).appLanguage) {
+                                ForEach(AppLanguage.allCases, id: \.self) { language in
+                                    Text(LocalizedStringKey(language.localizedName)).tag(language)
                                 }
                             }
-                            .frame(width: 120)
+                            .frame(width: 160)
                             
                             Spacer()
+                        }
+                        
+                        if workspaceStore.isLanguageChangePendingRestart {
+                            Text("A restart is required for language changes to take effect.")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                                .padding(.top, 4)
                         }
                     }
                     .padding(20)

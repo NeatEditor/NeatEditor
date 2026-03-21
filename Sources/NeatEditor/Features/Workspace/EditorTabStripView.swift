@@ -15,6 +15,8 @@ struct EditorTabStripView: View {
     static let trailingTabScrollPadding: CGFloat = 12
     static let trailingAccessoryWidth: CGFloat = 48
     static let trailingAccessoryPadding: CGFloat = 3
+    static let overflowFadeWidth: CGFloat = 16
+    static let overflowVisibilityThreshold: CGFloat = 1
     static let minimumWindowEdge: CGFloat = {
         // Keep the window large enough for traffic lights, two tabs, and the pin accessory.
         ceil(
@@ -26,54 +28,107 @@ struct EditorTabStripView: View {
     @Binding var tabs: [EditorTab]
     let selectedTabID: UUID?
     let onSelectTab: (UUID) -> Void
+    let onSelectTabRelative: (Int) -> Void
     let onRenameTab: (UUID, String) -> Void
     let onCloseTab: (UUID) -> Void
+    let onDeleteTab: (UUID) -> Void
+    let onCloseOtherTabs: (UUID) -> Void
     @State private var selectedTabFrame: CGRect = .null
     @State private var tabFrames: [UUID: CGRect] = [:]
+    @State private var tabScrollViewportFrame: CGRect = .null
     @State private var isWindowPinned = false
     @State private var editingTabID: UUID? = nil
 
     var body: some View {
         HStack(spacing: 0) {
-            TrafficLightBackgroundSpacer()
+            TitleBarAccessoryBackground()
                 .frame(width: Self.leadingPadding)
+                .allowsHitTesting(false)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 0) {
-                    ForEach($tabs) { $tab in
-                        EditorTabItemView(
-                            tab: $tab,
-                            isSelected: selectedTabID == tab.id,
-                            isEditing: Binding(
-                                get: { editingTabID == tab.id },
-                                set: { isEditing in
-                                    if isEditing {
-                                        editingTabID = tab.id
-                                    } else if editingTabID == tab.id {
-                                        editingTabID = nil
+            ScrollViewReader { scrollProxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 0) {
+                        ForEach($tabs) { $tab in
+                            EditorTabItemView(
+                                tab: $tab,
+                                isSelected: selectedTabID == tab.id,
+                                tabCount: tabs.count,
+                                isEditing: Binding(
+                                    get: { editingTabID == tab.id },
+                                    set: { isEditing in
+                                        if isEditing {
+                                            editingTabID = tab.id
+                                        } else if editingTabID == tab.id {
+                                            editingTabID = nil
+                                        }
                                     }
+                                )
+                            ) {
+                                if editingTabID != nil && editingTabID != tab.id {
+                                    NSApp.keyWindow?.makeFirstResponder(nil)
+                                    editingTabID = nil
                                 }
-                            )
-                        ) {
-                            if editingTabID != nil && editingTabID != tab.id {
-                                NSApp.keyWindow?.makeFirstResponder(nil)
-                                editingTabID = nil
+                                onSelectTab(tab.id)
+                            } onRename: { newTitle in
+                                onRenameTab(tab.id, newTitle)
+                            } onDelete: {
+                                onDeleteTab(tab.id)
+                            } onCloseOthers: {
+                                onCloseOtherTabs(tab.id)
                             }
-                            onSelectTab(tab.id)
-                        } onRename: { newTitle in
-                            onRenameTab(tab.id, newTitle)
+                            .id(tab.id)
                         }
                     }
+                    .padding(.trailing, Self.trailingTabScrollPadding)
+                    .padding(.top, 6)
                 }
-                .padding(.trailing, Self.trailingTabScrollPadding)
-                .padding(.top, 6)
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: TabScrollViewportFramePreferenceKey.self,
+                            value: proxy.frame(in: .named(TabBarLayout.coordinateSpaceName))
+                        )
+                    }
+                }
+                .overlay(alignment: .leading) {
+                    if showsLeadingOverflowFade {
+                        TabStripOverflowFade(edge: .leading)
+                    }
+                }
+                .overlay(alignment: .trailing) {
+                    if showsTrailingOverflowFade {
+                        TabStripOverflowFade(edge: .trailing)
+                    }
+                }
+                .overlay {
+                    TabStripScrollInterceptor(
+                        isEditing: editingTabID != nil,
+                        onSelectTabRelative: onSelectTabRelative
+                    )
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onChange(of: selectedTabID) { _, _ in
+                    scrollSelectedTabIntoView(using: scrollProxy)
+                }
+                .onChange(of: tabFrames) { _, _ in
+                    scrollSelectedTabIntoView(using: scrollProxy)
+                }
+                .onChange(of: tabScrollViewportFrame) { _, _ in
+                    scrollSelectedTabIntoView(using: scrollProxy)
+                }
+                .onAppear {
+                    scrollSelectedTabIntoView(using: scrollProxy)
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
-            PinWindowButton(isWindowPinned: $isWindowPinned)
-                .frame(width: Self.trailingAccessoryWidth)
-                .padding(.trailing, Self.trailingAccessoryPadding)
-                .padding(.top, 4)
+            TitleBarAccessoryBackground()
+                .overlay(alignment: .topTrailing) {
+                    PinWindowButton(isWindowPinned: $isWindowPinned)
+                        .frame(width: Self.trailingAccessoryWidth)
+                        .padding(.trailing, Self.trailingAccessoryPadding)
+                        .padding(.top, 4)
+                }
+                .frame(width: Self.trailingAccessoryWidth + Self.trailingAccessoryPadding)
         }
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
@@ -81,6 +136,9 @@ struct EditorTabStripView: View {
         }
         .onPreferenceChange(TabFramesPreferenceKey.self) { frames in
             tabFrames = frames
+        }
+        .onPreferenceChange(TabScrollViewportFramePreferenceKey.self) { frame in
+            tabScrollViewportFrame = frame
         }
         .background {
             ZStack(alignment: .bottom) {
@@ -110,6 +168,30 @@ struct EditorTabStripView: View {
         .frame(height: Self.titleBarHeight)
     }
 
+    private var showsLeadingOverflowFade: Bool {
+        guard !tabScrollViewportFrame.isNull else {
+            return false
+        }
+
+        return tabFrames.values.contains { frame in
+            !frame.isNull
+                && frame.minX < (
+                    tabScrollViewportFrame.minX - Self.overflowVisibilityThreshold)
+        }
+    }
+
+    private var showsTrailingOverflowFade: Bool {
+        guard !tabScrollViewportFrame.isNull else {
+            return false
+        }
+
+        return tabFrames.values.contains { frame in
+            !frame.isNull
+                && frame.maxX > (
+                    tabScrollViewportFrame.maxX + Self.overflowVisibilityThreshold)
+        }
+    }
+
     private func dismissEditing() {
         guard let tabID = editingTabID else { return }
         // Read the pending rename that EditorTabItemView wrote before we clear editing.
@@ -119,12 +201,201 @@ struct EditorTabStripView: View {
         }
         editingTabID = nil
     }
+
+    private func scrollSelectedTabIntoView(using scrollProxy: ScrollViewProxy) {
+        guard let selectedTabID,
+            let selectedFrame = tabFrames[selectedTabID],
+            !tabScrollViewportFrame.isNull
+        else {
+            return
+        }
+
+        let isLeadingClipped = selectedFrame.minX < tabScrollViewportFrame.minX
+        let isTrailingClipped = selectedFrame.maxX > tabScrollViewportFrame.maxX
+        guard isLeadingClipped || isTrailingClipped else {
+            return
+        }
+
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.14)) {
+                scrollProxy.scrollTo(selectedTabID, anchor: .center)
+            }
+        }
+    }
 }
 
-private struct TrafficLightBackgroundSpacer: View {
+private struct TitleBarAccessoryBackground: View {
     var body: some View {
         EditorChrome.tabBarBackground
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(TabJoinDiagnostics.dividerColor)
+                    .frame(height: 1)
+            }
             .allowsHitTesting(false)
+    }
+}
+
+private struct TabStripOverflowFade: View {
+    enum Edge {
+        case leading
+        case trailing
+    }
+
+    let edge: Edge
+
+    var body: some View {
+        LinearGradient(
+            colors: gradientColors,
+            startPoint: edge == .leading ? .leading : .trailing,
+            endPoint: edge == .leading ? .trailing : .leading
+        )
+        .frame(width: EditorTabStripView.overflowFadeWidth)
+        .allowsHitTesting(false)
+        .transition(.opacity)
+    }
+
+    private var gradientColors: [Color] {
+        [
+            EditorChrome.tabBarBackground,
+            EditorChrome.tabBarBackground.opacity(0)
+        ]
+    }
+}
+
+private struct TabStripScrollInterceptor: NSViewRepresentable {
+    let isEditing: Bool
+    let onSelectTabRelative: (Int) -> Void
+
+    func makeNSView(context: Context) -> TabStripScrollInterceptorView {
+        let view = TabStripScrollInterceptorView()
+        view.isEditing = isEditing
+        view.onSelectTabRelative = onSelectTabRelative
+        return view
+    }
+
+    func updateNSView(_ nsView: TabStripScrollInterceptorView, context: Context) {
+        nsView.isEditing = isEditing
+        nsView.onSelectTabRelative = onSelectTabRelative
+    }
+
+    final class TabStripScrollInterceptorView: NSView {
+        private enum ScrollTabSwitching {
+            static let resetInterval: TimeInterval = 0.35
+            static let threshold: CGFloat = 1
+            static let mouseWheelSensitivity: CGFloat = 0.005
+            static let trackpadSensitivity: CGFloat = 1 / 36
+        }
+
+        var isEditing = false
+        var onSelectTabRelative: ((Int) -> Void)?
+        private var accumulatedScrollDelta: CGFloat = 0
+        private var lastScrollTimestamp: TimeInterval = 0
+
+        override var isFlipped: Bool {
+            true
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            guard bounds.contains(point),
+                let currentEvent = NSApp.currentEvent
+            else {
+                return nil
+            }
+
+            switch currentEvent.type {
+            case .scrollWheel, .swipe:
+                return self
+            default:
+                return nil
+            }
+        }
+
+        override func scrollWheel(with event: NSEvent) {
+            guard !isEditing else {
+                super.scrollWheel(with: event)
+                return
+            }
+
+            if !event.momentumPhase.isEmpty {
+                resetAccumulatedScrollDelta()
+                return
+            }
+
+            if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
+                resetAccumulatedScrollDelta()
+                return
+            }
+
+            let horizontalDelta = event.hasPreciseScrollingDeltas
+                ? event.scrollingDeltaX
+                : event.deltaX
+            let verticalDelta = event.hasPreciseScrollingDeltas
+                ? event.scrollingDeltaY
+                : event.deltaY
+            let dominantDelta = abs(verticalDelta) >= abs(horizontalDelta) ? verticalDelta : horizontalDelta
+            guard dominantDelta != 0 else {
+                return
+            }
+
+            let usesTrackpadSensitivity =
+                !event.phase.isEmpty
+                || !event.momentumPhase.isEmpty
+            accumulateTabSelectionDelta(
+                dominantDelta,
+                timestamp: event.timestamp,
+                sensitivity: usesTrackpadSensitivity
+                    ? ScrollTabSwitching.trackpadSensitivity
+                    : ScrollTabSwitching.mouseWheelSensitivity
+            )
+        }
+
+        override func swipe(with event: NSEvent) {
+            guard !isEditing else {
+                super.swipe(with: event)
+                return
+            }
+
+            let dominantDelta = abs(event.deltaY) >= abs(event.deltaX) ? event.deltaY : event.deltaX
+            guard dominantDelta != 0 else {
+                return
+            }
+
+            resetAccumulatedScrollDelta()
+            let stepDelta: CGFloat = dominantDelta > 0 ? 1 : -1
+            accumulateTabSelectionDelta(stepDelta, timestamp: event.timestamp, sensitivity: 1)
+        }
+
+        private func accumulateTabSelectionDelta(
+            _ delta: CGFloat,
+            timestamp: TimeInterval,
+            sensitivity: CGFloat
+        ) {
+            if (timestamp - lastScrollTimestamp) > ScrollTabSwitching.resetInterval {
+                accumulatedScrollDelta = 0
+            }
+
+            let scaledDelta = delta * sensitivity
+            if accumulatedScrollDelta != 0,
+                scaledDelta.sign != accumulatedScrollDelta.sign
+            {
+                accumulatedScrollDelta = 0
+            }
+
+            accumulatedScrollDelta += scaledDelta
+            lastScrollTimestamp = timestamp
+
+            while abs(accumulatedScrollDelta) >= ScrollTabSwitching.threshold {
+                let relativeOffset = accumulatedScrollDelta > 0 ? -1 : 1
+                onSelectTabRelative?(relativeOffset)
+                accumulatedScrollDelta += accumulatedScrollDelta > 0 ? -1 : 1
+            }
+        }
+
+        private func resetAccumulatedScrollDelta() {
+            accumulatedScrollDelta = 0
+            lastScrollTimestamp = 0
+        }
     }
 }
 
@@ -146,6 +417,7 @@ private struct PinWindowButton: View {
                 }
         }
         .buttonStyle(.plain)
+        .focusEffectDisabled()
         .contentShape(Circle())
         .help(isWindowPinned ? "Disable Always on Top" : "Enable Always on Top")
         .accessibilityLabel(isWindowPinned ? "Disable Always on Top" : "Enable Always on Top")
@@ -173,11 +445,15 @@ struct EditorTabItemView: View {
 
     @Binding var tab: EditorTab
     let isSelected: Bool
+    let tabCount: Int
     @Binding var isEditing: Bool
     let action: () -> Void
     let onRename: (String) -> Void
+    let onDelete: (() -> Void)?
+    let onCloseOthers: () -> Void
 
     @State private var isHovering = false
+    @State private var isShowingDeleteConfirmation = false
     @State private var draftTitle = ""
     @State private var lastSelectedClickTime: Date = .distantPast
     @FocusState private var isFocused: Bool
@@ -193,6 +469,7 @@ struct EditorTabItemView: View {
                     if isEditing {
                         TextField("", text: $draftTitle)
                             .textFieldStyle(.plain)
+                            .focusEffectDisabled()
                             .font(
                                 .system(
                                     size: Self.titleFontSize,
@@ -200,6 +477,9 @@ struct EditorTabItemView: View {
                             )
                             .focused($isFocused)
                             .labelsHidden()
+                            .onAppear {
+                                requestTitleFieldFocus()
+                            }
                             .onSubmit {
                                 commitTitleEditing()
                             }
@@ -223,6 +503,7 @@ struct EditorTabItemView: View {
             .contentShape(TabItemHitShape(isSelected: isSelected))
         }
         .buttonStyle(.plain)
+        .focusEffectDisabled()
         .zIndex(isSelected ? 1 : 0)
         .onAppear {
             draftTitle = tab.title
@@ -249,6 +530,32 @@ struct EditorTabItemView: View {
                 tabStripPendingRename = sanitizedTitle(from: newValue)
             }
         }
+        .contextMenu {
+            if tabCount > 1 {
+                Button {
+                    onCloseOthers()
+                } label: {
+                    Label("关闭其他标签", systemImage: "xmark.rectangle.portrait")
+                }
+            }
+
+            if let onDelete, tab.fileURL != nil {
+                Divider()
+                Button(role: .destructive) {
+                    isShowingDeleteConfirmation = true
+                } label: {
+                    Label("移至废纸篓", systemImage: "trash")
+                }
+            }
+        }
+        .alert("移至废纸篓", isPresented: $isShowingDeleteConfirmation) {
+            Button("取消", role: .cancel) {}
+            Button("移至废纸篓", role: .destructive) {
+                onDelete?()
+            }
+        } message: {
+            Text("\"\(tab.title)\" 将被移至废纸篓，可从废纸篓还原。")
+        }
     }
 
     private func handleClick() {
@@ -265,11 +572,7 @@ struct EditorTabItemView: View {
         if isSelected {
             let now = Date()
             if now.timeIntervalSince(lastSelectedClickTime) < NSEvent.doubleClickInterval {
-                draftTitle = tab.title
-                tabStripPendingRename = sanitizedTitle(from: tab.title)
-                isEditing = true
-                isFocused = true
-                lastSelectedClickTime = .distantPast
+                beginTitleEditing()
                 return
             }
             lastSelectedClickTime = now
@@ -278,6 +581,27 @@ struct EditorTabItemView: View {
         }
 
         action()
+    }
+
+    private func beginTitleEditing() {
+        draftTitle = tab.title
+        tabStripPendingRename = sanitizedTitle(from: tab.title)
+        // Clear the editor responder first so the insertion caret does not
+        // remain in the document while the rename field is taking focus.
+        NSApp.keyWindow?.makeFirstResponder(nil)
+        isEditing = true
+        requestTitleFieldFocus()
+        lastSelectedClickTime = .distantPast
+    }
+
+    private func requestTitleFieldFocus() {
+        DispatchQueue.main.async {
+            guard isEditing else {
+                return
+            }
+
+            isFocused = true
+        }
     }
 
     /// Called only from onSubmit (Enter key). For external dismiss (click
@@ -399,7 +723,7 @@ private struct TitleBarEventMonitor: NSViewRepresentable {
             if event.type == .leftMouseDown {
                 // Dismiss editing when clicking outside the title bar area
                 // (where the rename text field lives).
-                if isEditing && !isClickInTitleBarRegion(event) {
+                if isEditing && !isEventInTitleBarRegion(event) {
                     DispatchQueue.main.async { [weak self] in
                         self?.onDismissEditing?()
                     }
@@ -409,7 +733,7 @@ private struct TitleBarEventMonitor: NSViewRepresentable {
                 // action (also mouseUp) has already set the suppress flag.
                 guard event.clickCount >= 2,
                     event.window === self.window,
-                    isClickInTitleBarRegion(event)
+                    isEventInTitleBarRegion(event)
                 else { return }
 
                 // Defer to the next run loop iteration. The Button action fires
@@ -449,7 +773,7 @@ private struct TitleBarEventMonitor: NSViewRepresentable {
 
         /// Check if the click is within the title bar / tab strip region
         /// (the top portion of the window).
-        private func isClickInTitleBarRegion(_ event: NSEvent) -> Bool {
+        private func isEventInTitleBarRegion(_ event: NSEvent) -> Bool {
             guard let window = event.window else { return false }
             // With .hiddenTitleBar, the content fills the entire window.
             // The tab strip occupies the top titleBarHeight points.
@@ -504,6 +828,17 @@ private struct TabFramesPreferenceKey: PreferenceKey {
 
     static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
         value.merge(nextValue(), uniquingKeysWith: { _, next in next })
+    }
+}
+
+private struct TabScrollViewportFramePreferenceKey: PreferenceKey {
+    static let defaultValue: CGRect = .null
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        let nextValue = nextValue()
+        if !nextValue.isNull {
+            value = nextValue
+        }
     }
 }
 
@@ -673,6 +1008,20 @@ private struct ConnectedTabBorderShape: Shape {
             tabs: $tabs,
             selectedTabID: selectedTabID,
             onSelectTab: { selectedTabID = $0 },
+            onSelectTabRelative: { offset in
+                guard let currentSelectedTabID = selectedTabID,
+                    let selectedIndex = tabs.firstIndex(where: { $0.id == currentSelectedTabID })
+                else {
+                    return
+                }
+
+                let targetIndex = selectedIndex + offset
+                guard tabs.indices.contains(targetIndex) else {
+                    return
+                }
+
+                selectedTabID = tabs[targetIndex].id
+            },
             onRenameTab: { id, newTitle in
                 guard let index = tabs.firstIndex(where: { $0.id == id }) else {
                     return
@@ -685,7 +1034,9 @@ private struct ConnectedTabBorderShape: Shape {
                 if selectedTabID == id {
                     selectedTabID = tabs.first?.id
                 }
-            }
+            },
+            onDeleteTab: { _ in },
+            onCloseOtherTabs: { _ in }
         )
         Spacer()
     }

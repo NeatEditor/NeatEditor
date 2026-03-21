@@ -12,8 +12,11 @@ struct WorkspaceView: View {
                 tabs: $bindableWorkspace.tabs,
                 selectedTabID: workspaceStore.selectedTabID,
                 onSelectTab: workspaceStore.selectTab,
+                onSelectTabRelative: workspaceStore.selectTab(relativeOffset:),
                 onRenameTab: workspaceStore.renameDocument,
-                onCloseTab: workspaceStore.closeDocument
+                onCloseTab: workspaceStore.closeDocument,
+                onDeleteTab: workspaceStore.moveToTrash,
+                onCloseOtherTabs: workspaceStore.closeOtherDocuments(keeping:)
             )
 
             if let selectedTabID = workspaceStore.selectedTabID,
@@ -95,7 +98,12 @@ struct WorkspaceView: View {
 
         return HStack(spacing: 12) {
             TextField("Search", text: $bindableWorkspace.searchQuery)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color(NSColor.textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.3), lineWidth: 1))
+                .focusEffectDisabled()
                 .focused($isSearchFieldFocused)
                 .onSubmit {
                     workspaceStore.submitSearch()
