@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		16EC1F059C67919FE7417ECA /* WorkspaceCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C1E4F1C5E0852265B8A3A4 /* WorkspaceCommands.swift */; };
 		21B6368381D44AB472B6E272 /* ZoomableTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CA0DD15623CA315741B803E /* ZoomableTextView.swift */; };
+		247B4DD44E7B8560AA53E2D1 /* WorkspacePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1674FE73DFD3A99700320E6 /* WorkspacePreferences.swift */; };
 		260FB1D768B914BEC7E705CE /* LineNumberGutterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF0D55E27675FFDA411D699 /* LineNumberGutterView.swift */; };
 		28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE177253A6D16097E143352 /* NeatEditorApp.swift */; };
 		2F0D92985DE89AFB1227039E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC4981C6B05519CD1877B4D5 /* Assets.xcassets */; };
@@ -18,6 +19,7 @@
 		40E4B08329E49913ADF40EFC /* EditorTextContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */; };
 		44208CD4C131FC71C34946E1 /* EditorTabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */; };
 		4A7455D8ED46B4FC817A58B3 /* EditorChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */; };
+		4C28ACC82CF6ADE661F5C511 /* WorkspaceSearchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8918469298602DC5C5D7047 /* WorkspaceSearchState.swift */; };
 		4C6DD29CD0452D9311044BE8 /* EditorTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC9CB3A37D479100CB1B9D6 /* EditorTextView.swift */; };
 		6C4A4EF55D4E956B1CB30509 /* DocumentPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */; };
 		85E7BB7174B4D000CEFDE8A6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */; };
@@ -25,6 +27,7 @@
 		AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */; };
 		B94CDB60C07A6AB1960668D4 /* ExternalFileOpenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */; };
 		DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */; };
+		EE8FDF1E46F208FEEE81F43F /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56530C158F57A8758BF0D6FF /* AppLanguage.swift */; };
 		F294F12E2A20AE8FFE734E66 /* TabBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BC26D5C7240FEF483712F5 /* TabBehavior.swift */; };
 		F9F0759B221E03E66297E6D5 /* WorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */; };
 /* End PBXBuildFile section */
@@ -37,6 +40,7 @@
 		32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalFileOpenCoordinator.swift; sourceTree = "<group>"; };
 		3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleBarTrafficLightAlignmentView.swift; sourceTree = "<group>"; };
 		41100292C0909F81989C8A6B /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		56530C158F57A8758BF0D6FF /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		57BC26D5C7240FEF483712F5 /* TabBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBehavior.swift; sourceTree = "<group>"; };
 		60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTabStripView.swift; sourceTree = "<group>"; };
 		63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStore.swift; sourceTree = "<group>"; };
@@ -47,11 +51,13 @@
 		9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextContainerView.swift; sourceTree = "<group>"; };
 		9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPersistenceService.swift; sourceTree = "<group>"; };
+		A8918469298602DC5C5D7047 /* WorkspaceSearchState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSearchState.swift; sourceTree = "<group>"; };
 		BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		C59982890BA0049E8CC31E4F /* NeatEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeatEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC4981C6B05519CD1877B4D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CEE07E7303361F05267B1085 /* EditorTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTab.swift; sourceTree = "<group>"; };
 		D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorChrome.swift; sourceTree = "<group>"; };
+		E1674FE73DFD3A99700320E6 /* WorkspacePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacePreferences.swift; sourceTree = "<group>"; };
 		FF4DB92AF9B1A147AEED3F20 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -62,6 +68,8 @@
 				CEE07E7303361F05267B1085 /* EditorTab.swift */,
 				60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */,
 				9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */,
+				E1674FE73DFD3A99700320E6 /* WorkspacePreferences.swift */,
+				A8918469298602DC5C5D7047 /* WorkspaceSearchState.swift */,
 				63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */,
 				BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */,
 			);
@@ -137,6 +145,7 @@
 		8A73940DB02FD1D6108FDF13 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				56530C158F57A8758BF0D6FF /* AppLanguage.swift */,
 				57BC26D5C7240FEF483712F5 /* TabBehavior.swift */,
 			);
 			path = Models;
@@ -268,6 +277,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE8FDF1E46F208FEEE81F43F /* AppLanguage.swift in Sources */,
 				AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */,
 				6C4A4EF55D4E956B1CB30509 /* DocumentPersistenceService.swift in Sources */,
 				4A7455D8ED46B4FC817A58B3 /* EditorChrome.swift in Sources */,
@@ -282,6 +292,8 @@
 				F294F12E2A20AE8FFE734E66 /* TabBehavior.swift in Sources */,
 				A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */,
 				16EC1F059C67919FE7417ECA /* WorkspaceCommands.swift in Sources */,
+				247B4DD44E7B8560AA53E2D1 /* WorkspacePreferences.swift in Sources */,
+				4C28ACC82CF6ADE661F5C511 /* WorkspaceSearchState.swift in Sources */,
 				DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */,
 				F9F0759B221E03E66297E6D5 /* WorkspaceView.swift in Sources */,
 				3143A92017C91179B2A2A7ED /* ZoomableScrollView.swift in Sources */,

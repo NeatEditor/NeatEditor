@@ -1,9 +1,12 @@
+import AppKit
 import SwiftUI
 
 enum EditorChrome {
     static let tabBarBackground = Color(NSColor.windowBackgroundColor)
     static let editorSurface = Color(NSColor.controlBackgroundColor)
-    static let border = Color(NSColor.separatorColor).opacity(1)
+    static let borderColor = NSColor.separatorColor
+    static let border = Color(borderColor)
+    static let lineWidth: CGFloat = 1
     static let hoverFill = Color.secondary.opacity(0.08)
 }
 

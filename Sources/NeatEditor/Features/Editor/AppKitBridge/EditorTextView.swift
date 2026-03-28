@@ -5,9 +5,8 @@ struct EditorTextView: NSViewRepresentable {
     @Binding var text: String
     let fontSize: CGFloat
     let tabBehavior: TabBehavior
-    let searchQuery: String
-    let isRegexSearchEnabled: Bool
-    let searchRequestID: Int
+    let textSoftness: WorkspacePreferences.EditorTextSoftnessConfiguration
+    let searchState: WorkspaceSearchState
 
     let onTextChange: (_ isComposing: Bool) -> Void
     let onCompositionEnd: () -> Void
@@ -31,6 +30,7 @@ struct EditorTextView: NSViewRepresentable {
         containerView.synchronizeLineNumbersToCurrentText()
         textView.onOpenFiles = onOpenFiles
         textView.tabBehavior = tabBehavior
+        containerView.textSoftness = textSoftness
         containerView.applyEditorTextAttributes()
         textView.onCompositionEnd = {
             [weak containerView, weak coordinator = context.coordinator, weak textView] in
@@ -51,6 +51,7 @@ struct EditorTextView: NSViewRepresentable {
         containerView.onDecreaseFontSize = onDecreaseFontSize
         containerView.textView.onOpenFiles = onOpenFiles
         containerView.textView.tabBehavior = tabBehavior
+        containerView.textSoftness = textSoftness
 
         if !containerView.textView.hasMarkedText() && containerView.textView.string != text {
             context.coordinator.isSyncingFromSwiftUI = true
@@ -63,11 +64,11 @@ struct EditorTextView: NSViewRepresentable {
         containerView.applyFontSize(fontSize)
         containerView.enforceEditorTextAttributesIfNeeded()
 
-        if context.coordinator.lastSearchRequestID != searchRequestID {
-            context.coordinator.lastSearchRequestID = searchRequestID
+        if context.coordinator.lastSearchRequestID != searchState.requestID {
+            context.coordinator.lastSearchRequestID = searchState.requestID
             containerView.performSearch(
-                for: searchQuery,
-                usesRegularExpression: isRegexSearchEnabled
+                for: searchState.query,
+                usesRegularExpression: searchState.isRegexEnabled
             )
         }
     }

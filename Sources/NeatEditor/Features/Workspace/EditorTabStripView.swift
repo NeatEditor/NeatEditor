@@ -230,7 +230,7 @@ private struct TitleBarAccessoryBackground: View {
             .overlay(alignment: .bottom) {
                 Rectangle()
                     .fill(TabJoinDiagnostics.dividerColor)
-                    .frame(height: 1)
+                    .frame(height: EditorChrome.lineWidth)
             }
             .allowsHitTesting(false)
     }
@@ -260,6 +260,34 @@ private struct TabStripOverflowFade: View {
             EditorChrome.tabBarBackground,
             EditorChrome.tabBarBackground.opacity(0)
         ]
+    }
+}
+
+private struct TitleBarControlDragSuppression: ViewModifier {
+    private static let activationDistance: CGFloat = 4
+
+    @Binding var isSuppressingAction: Bool
+
+    func body(content: Content) -> some View {
+        content.simultaneousGesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                .onChanged { value in
+                    guard !isSuppressingAction else {
+                        return
+                    }
+
+                    let translation = value.translation
+                    let distance = max(abs(translation.width), abs(translation.height))
+                    if distance >= Self.activationDistance {
+                        isSuppressingAction = true
+                    }
+                }
+                .onEnded { _ in
+                    DispatchQueue.main.async {
+                        isSuppressingAction = false
+                    }
+                }
+        )
     }
 }
 
@@ -402,9 +430,13 @@ private struct TabStripScrollInterceptor: NSViewRepresentable {
 private struct PinWindowButton: View {
     @Binding var isWindowPinned: Bool
     @State private var isHovering = false
+    @State private var suppressActionAfterDrag = false
 
     var body: some View {
         Button {
+            guard !suppressActionAfterDrag else {
+                return
+            }
             isWindowPinned.toggle()
         } label: {
             Image(systemName: "pin.fill")
@@ -421,6 +453,9 @@ private struct PinWindowButton: View {
         .contentShape(Circle())
         .help(isWindowPinned ? "Disable Always on Top" : "Enable Always on Top")
         .accessibilityLabel(isWindowPinned ? "Disable Always on Top" : "Enable Always on Top")
+        .modifier(
+            TitleBarControlDragSuppression(isSuppressingAction: $suppressActionAfterDrag)
+        )
         .onHover { hovering in
             isHovering = hovering
         }
@@ -453,13 +488,16 @@ struct EditorTabItemView: View {
     let onCloseOthers: () -> Void
 
     @State private var isHovering = false
-    @State private var isShowingDeleteConfirmation = false
     @State private var draftTitle = ""
     @State private var lastSelectedClickTime: Date = .distantPast
+    @State private var suppressActionAfterDrag = false
     @FocusState private var isFocused: Bool
 
     var body: some View {
         Button {
+            guard !suppressActionAfterDrag else {
+                return
+            }
             handleClick()
         } label: {
             ZStack(alignment: .bottom) {
@@ -504,6 +542,9 @@ struct EditorTabItemView: View {
         }
         .buttonStyle(.plain)
         .focusEffectDisabled()
+        .modifier(
+            TitleBarControlDragSuppression(isSuppressingAction: $suppressActionAfterDrag)
+        )
         .zIndex(isSelected ? 1 : 0)
         .onAppear {
             draftTitle = tab.title
@@ -531,6 +572,15 @@ struct EditorTabItemView: View {
             }
         }
         .contextMenu {
+            if let fileURL = tab.fileURL {
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([fileURL])
+                } label: {
+                    Label("在 Finder 中显示", systemImage: "folder")
+                }
+                Divider()
+            }
+
             if tabCount > 1 {
                 Button {
                     onCloseOthers()
@@ -542,19 +592,11 @@ struct EditorTabItemView: View {
             if let onDelete, tab.fileURL != nil {
                 Divider()
                 Button(role: .destructive) {
-                    isShowingDeleteConfirmation = true
+                    onDelete()
                 } label: {
                     Label("移至废纸篓", systemImage: "trash")
                 }
             }
-        }
-        .alert("移至废纸篓", isPresented: $isShowingDeleteConfirmation) {
-            Button("取消", role: .cancel) {}
-            Button("移至废纸篓", role: .destructive) {
-                onDelete?()
-            }
-        } message: {
-            Text("\"\(tab.title)\" 将被移至废纸篓，可从废纸篓还原。")
         }
     }
 
@@ -648,7 +690,11 @@ struct EditorTabItemView: View {
                     ConnectedTabBorderShape(topInset: 6, topCornerRadius: 9, bottomJoinRadius: 9)
                         .stroke(
                             TabJoinDiagnostics.borderColor,
-                            style: StrokeStyle(lineWidth: 1, lineCap: .butt, lineJoin: .round)
+                            style: StrokeStyle(
+                                lineWidth: EditorChrome.lineWidth,
+                                lineCap: .butt,
+                                lineJoin: .round
+                            )
                         )
                 }
         } else if isHovering {
@@ -898,7 +944,7 @@ private struct TabBarDividerOverlay: View {
                     path.addLine(to: CGPoint(x: proxy.size.width, y: y))
                 }
             }
-            .stroke(TabJoinDiagnostics.dividerColor, lineWidth: 1)
+            .stroke(TabJoinDiagnostics.dividerColor, lineWidth: EditorChrome.lineWidth)
         }
         .allowsHitTesting(false)
     }

@@ -27,11 +27,10 @@ struct WorkspaceView: View {
                 } else {
                     EditorTextView(
                         text: $bindableWorkspace.tabs[index].content,
-                        fontSize: workspaceStore.editorFontSize,
-                        tabBehavior: workspaceStore.tabBehavior,
-                        searchQuery: workspaceStore.searchQuery,
-                        isRegexSearchEnabled: workspaceStore.isRegexSearchEnabled,
-                        searchRequestID: workspaceStore.searchRequestID,
+                        fontSize: workspaceStore.preferences.editorFontSize,
+                        tabBehavior: workspaceStore.preferences.tabBehavior,
+                        textSoftness: workspaceStore.preferences.editorTextSoftness,
+                        searchState: workspaceStore.searchState,
                         onTextChange: { isComposing in
                             if isComposing {
                                 workspaceStore.cancelAutoSave(for: selectedTabID)
@@ -57,7 +56,7 @@ struct WorkspaceView: View {
                         .background(EditorChrome.editorSurface)
                         .overlay {
                             EditorSurfaceBorderShape()
-                                .stroke(EditorChrome.border, lineWidth: 1)
+                                .stroke(EditorChrome.border, lineWidth: EditorChrome.lineWidth)
                         }
                 }
             } else {
@@ -67,22 +66,33 @@ struct WorkspaceView: View {
                     .background(EditorChrome.editorSurface)
                     .overlay {
                         EditorSurfaceBorderShape()
-                            .stroke(EditorChrome.border, lineWidth: 1)
+                            .stroke(EditorChrome.border, lineWidth: EditorChrome.lineWidth)
                     }
             }
 
-            if workspaceStore.isSearchBarPresented {
+            if workspaceStore.searchState.isPresented {
                 searchBar
             }
         }
         .ignoresSafeArea(.all, edges: .top)
+        .alert(
+            workspaceStore.renameFailureAlert?.title ?? "Rename Failed",
+            isPresented: renameFailureAlertIsPresented,
+            presenting: workspaceStore.renameFailureAlert
+        ) { _ in
+            Button("OK", role: .cancel) {
+                workspaceStore.dismissRenameFailureAlert()
+            }
+        } message: { alert in
+            Text(alert.message)
+        }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .inactive || newPhase == .background {
                 workspaceStore.saveAllDocuments()
             }
         }
-        .onChange(of: workspaceStore.searchFocusRequestID) { _, _ in
-            isSearchFieldFocused = workspaceStore.isSearchBarPresented
+        .onChange(of: workspaceStore.searchState.focusRequestID) { _, _ in
+            isSearchFieldFocused = workspaceStore.searchState.isPresented
         }
         .dropDestination(for: URL.self) { items, _ in
             Task { @MainActor in
@@ -97,12 +107,15 @@ struct WorkspaceView: View {
         @Bindable var bindableWorkspace = workspaceStore
 
         return HStack(spacing: 12) {
-            TextField("Search", text: $bindableWorkspace.searchQuery)
+            TextField("Search", text: $bindableWorkspace.searchState.query)
                 .textFieldStyle(.plain)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(Color(NSColor.textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.secondary.opacity(0.3), lineWidth: 1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(EditorChrome.border, lineWidth: EditorChrome.lineWidth)
+                )
                 .focusEffectDisabled()
                 .focused($isSearchFieldFocused)
                 .onSubmit {
@@ -115,14 +128,14 @@ struct WorkspaceView: View {
                 Text(".*")
                     .font(.system(.body, design: .monospaced))
                     .foregroundStyle(
-                        workspaceStore.isRegexSearchEnabled ? Color.accentColor : .secondary
+                        workspaceStore.searchState.isRegexEnabled ? Color.accentColor : .secondary
                     )
                     .frame(minWidth: 28)
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
             .accessibilityLabel(
-                workspaceStore.isRegexSearchEnabled
+                workspaceStore.searchState.isRegexEnabled
                 ? "Disable Regular Expression Search"
                 : "Enable Regular Expression Search"
             )
@@ -151,13 +164,24 @@ struct WorkspaceView: View {
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(EditorChrome.border)
-                .frame(height: 1)
+                .frame(height: EditorChrome.lineWidth)
         }
     }
 
     private var isSearchActionDisabled: Bool {
         workspaceStore.selectedTabID == nil ||
-        workspaceStore.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !workspaceStore.searchState.canSubmit
+    }
+
+    private var renameFailureAlertIsPresented: Binding<Bool> {
+        Binding(
+            get: { workspaceStore.renameFailureAlert != nil },
+            set: { isPresented in
+                if !isPresented {
+                    workspaceStore.dismissRenameFailureAlert()
+                }
+            }
+        )
     }
 }
 

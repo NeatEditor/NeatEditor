@@ -3,32 +3,27 @@ import Observation
 import AppKit
 import OSLog
 
-enum AppLanguage: String, Codable, CaseIterable {
-    case system = "system"
-    case english = "en"
-    case simplifiedChinese = "zh-Hans"
-
-    var localizedName: String {
-        switch self {
-        case .system: return "System Default"
-        case .english: return "English"
-        case .simplifiedChinese: return "Simplified Chinese"
-        }
-    }
-}
-
 @Observable
 @MainActor
 final class WorkspaceStore {
-    private enum EditorFontMetrics {
-        static let minimumSize: CGFloat = 10
-        static let maximumSize: CGFloat = 36
-        static let step: CGFloat = 1
+    private enum UserDefaultsKey {
+        static let workspaceState = "WorkspaceState"
+        static let appleLanguages = "AppleLanguages"
+    }
+
+    private enum EditorFontStep {
+        static let value: CGFloat = 1
     }
 
     private struct ClosedTabSnapshot {
         let tab: EditorTab
         let index: Int
+    }
+
+    struct RenameFailureAlert: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
     }
 
     private static let logger = Logger(
@@ -38,28 +33,14 @@ final class WorkspaceStore {
 
     var tabs: [EditorTab] = []
     var selectedTabID: UUID?
-    var editorFontSize: CGFloat = 13 {
+    var preferences = WorkspacePreferences() {
         didSet {
-            saveState()
-        }
-    }
-    var tabBehavior: TabBehavior = .spaces2 {
-        didSet {
-            saveState()
-        }
-    }
-    var appLanguage: AppLanguage = .system {
-        didSet {
-            updateAppleLanguages()
-            saveState()
+            handlePreferencesChange(from: oldValue, to: preferences)
         }
     }
     var isLanguageChangePendingRestart = false
-    var isSearchBarPresented = false
-    var searchQuery = ""
-    var isRegexSearchEnabled = false
-    var searchRequestID = 0
-    var searchFocusRequestID = 0
+    var searchState = WorkspaceSearchState()
+    var renameFailureAlert: RenameFailureAlert?
     var canReopenClosedTab: Bool {
         !closedTabs.isEmpty
     }
@@ -96,6 +77,7 @@ final class WorkspaceStore {
         tabs.append(newTab)
         selectedTabID = newTab.id
         loadTabContentIfNeeded(id: newTab.id)
+        applyEditorFontPreferenceForSelectedTab()
         saveState()
     }
 
@@ -123,6 +105,7 @@ final class WorkspaceStore {
         if let targetTabID {
             selectedTabID = targetTabID
             loadTabContentIfNeeded(id: targetTabID)
+            applyEditorFontPreferenceForSelectedTab()
         }
         saveState()
     }
@@ -135,6 +118,7 @@ final class WorkspaceStore {
         saveSelectedDocumentIfNeeded()
         selectedTabID = id
         loadTabContentIfNeeded(id: id)
+        applyEditorFontPreferenceForSelectedTab()
         saveState()
     }
 
@@ -191,6 +175,7 @@ final class WorkspaceStore {
             }
             if let newSelection = selectedTabID {
                 loadTabContentIfNeeded(id: newSelection)
+                applyEditorFontPreferenceForSelectedTab()
             }
         }
 
@@ -211,6 +196,7 @@ final class WorkspaceStore {
         }
         selectedTabID = id
         loadTabContentIfNeeded(id: id)
+        applyEditorFontPreferenceForSelectedTab()
         saveState()
     }
 
@@ -221,6 +207,7 @@ final class WorkspaceStore {
             if let fileURL = closedTabSnapshot.tab.fileURL,
                let existingTabID = existingTabID(for: fileURL) {
                 selectedTabID = existingTabID
+                applyEditorFontPreferenceForSelectedTab()
                 saveState()
                 return
             }
@@ -229,6 +216,7 @@ final class WorkspaceStore {
             tabs.insert(closedTabSnapshot.tab, at: restoredIndex)
             selectedTabID = closedTabSnapshot.tab.id
             loadTabContentIfNeeded(id: closedTabSnapshot.tab.id)
+            applyEditorFontPreferenceForSelectedTab()
             saveState()
             return
         }
@@ -276,6 +264,7 @@ final class WorkspaceStore {
             }
             if let newSelection = selectedTabID {
                 loadTabContentIfNeeded(id: newSelection)
+                applyEditorFontPreferenceForSelectedTab()
             }
         }
 
@@ -287,60 +276,61 @@ final class WorkspaceStore {
             return
         }
 
+        let originalFileURL = normalizedEditorFontFileURL(for: tabs[index].fileURL)
+
         do {
             tabs[index] = try persistenceService.rename(tab: tabs[index], to: newTitle)
+            preferences.moveRememberedEditorFontSize(
+                from: originalFileURL,
+                to: normalizedEditorFontFileURL(for: tabs[index].fileURL)
+            )
+
+            if selectedTabID == id {
+                preferences.rememberCurrentEditorFontSize(
+                    for: normalizedEditorFontFileURL(for: tabs[index].fileURL)
+                )
+            }
             saveState()
         } catch {
+            if case let DocumentPersistenceService.PersistenceError.destinationAlreadyExists(url) = error {
+                renameFailureAlert = RenameFailureAlert(
+                    title: "Rename Failed",
+                    message: """
+                    “\(url.lastPathComponent)” already exists in this folder. \
+                    Use a different name and try again.
+                    """
+                )
+            }
             Self.logger.error("Failed to rename document: \(error.localizedDescription, privacy: .public)")
         }
     }
 
+    func dismissRenameFailureAlert() {
+        renameFailureAlert = nil
+    }
+
     func increaseEditorFontSize() {
-        updateEditorFontSize(by: EditorFontMetrics.step)
+        updateEditorFontSize(by: EditorFontStep.value)
     }
 
     func decreaseEditorFontSize() {
-        updateEditorFontSize(by: -EditorFontMetrics.step)
+        updateEditorFontSize(by: -EditorFontStep.value)
     }
 
     func presentSearchBar() {
-        isSearchBarPresented = true
-        searchFocusRequestID += 1
+        searchState.present()
     }
 
     func dismissSearchBar() {
-        isSearchBarPresented = false
+        searchState.dismiss()
     }
 
     func toggleRegexSearch() {
-        isRegexSearchEnabled.toggle()
-
-        let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuery.isEmpty else {
-            return
-        }
-
-        if searchQuery != trimmedQuery {
-            searchQuery = trimmedQuery
-        }
-
-        isSearchBarPresented = true
-        searchRequestID += 1
+        searchState.toggleRegex()
     }
 
     func submitSearch() {
-        let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuery.isEmpty else {
-            presentSearchBar()
-            return
-        }
-
-        if searchQuery != trimmedQuery {
-            searchQuery = trimmedQuery
-        }
-
-        isSearchBarPresented = true
-        searchRequestID += 1
+        searchState.submit()
     }
     
     func saveDocument(id: UUID) {
@@ -350,6 +340,12 @@ final class WorkspaceStore {
 
         do {
             tabs[index] = try persistenceService.save(tab: tabs[index])
+
+            if selectedTabID == id {
+                preferences.rememberCurrentEditorFontSize(
+                    for: normalizedEditorFontFileURL(for: tabs[index].fileURL)
+                )
+            }
             saveState()
         } catch {
             Self.logger.error("Failed to save document: \(error.localizedDescription, privacy: .public)")
@@ -375,15 +371,12 @@ final class WorkspaceStore {
     }
 
     private func updateEditorFontSize(by delta: CGFloat) {
-        let nextSize = (editorFontSize + delta).clamped(
-            to: EditorFontMetrics.minimumSize...EditorFontMetrics.maximumSize
-        )
-        guard nextSize != editorFontSize else {
+        guard preferences.stepEditorFontSize(
+            by: delta,
+            rememberingFor: selectedEditorFontFileURL()
+        ) else {
             return
         }
-
-        editorFontSize = nextSize
-        saveState()
     }
 
     private func loadTabContentIfNeeded(id: UUID) {
@@ -457,15 +450,73 @@ final class WorkspaceStore {
             let fileURL: URL?
             let isSettings: Bool
         }
+
         let tabs: [TabState]
         let selectedFileURL: URL?
         let isSettingsSelected: Bool
-        let editorFontSize: CGFloat
-        let tabBehavior: TabBehavior
-        let appLanguage: AppLanguage?
-    }
+        let preferences: WorkspacePreferences
 
-    private static let stateKey = "WorkspaceState"
+        private enum CodingKeys: String, CodingKey {
+            case tabs
+            case selectedFileURL
+            case isSettingsSelected
+            case preferences
+            case editorFontSize
+            case tabBehavior
+            case appLanguage
+        }
+
+        init(
+            tabs: [TabState],
+            selectedFileURL: URL?,
+            isSettingsSelected: Bool,
+            preferences: WorkspacePreferences
+        ) {
+            self.tabs = tabs
+            self.selectedFileURL = selectedFileURL
+            self.isSettingsSelected = isSettingsSelected
+            self.preferences = preferences
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            tabs = try container.decode([TabState].self, forKey: .tabs)
+            selectedFileURL = try container.decodeIfPresent(URL.self, forKey: .selectedFileURL)
+            isSettingsSelected = try container.decode(Bool.self, forKey: .isSettingsSelected)
+
+            if let preferences = try container.decodeIfPresent(
+                WorkspacePreferences.self,
+                forKey: .preferences
+            ) {
+                self.preferences = preferences
+                return
+            }
+
+            let defaultPreferences = WorkspacePreferences()
+            preferences = WorkspacePreferences(
+                editorFontSize: try container.decodeIfPresent(
+                    CGFloat.self,
+                    forKey: .editorFontSize
+                ) ?? defaultPreferences.editorFontSize,
+                tabBehavior: try container.decodeIfPresent(
+                    TabBehavior.self,
+                    forKey: .tabBehavior
+                ) ?? defaultPreferences.tabBehavior,
+                appLanguage: try container.decodeIfPresent(
+                    AppLanguage.self,
+                    forKey: .appLanguage
+                ) ?? defaultPreferences.appLanguage
+            )
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(tabs, forKey: .tabs)
+            try container.encodeIfPresent(selectedFileURL, forKey: .selectedFileURL)
+            try container.encode(isSettingsSelected, forKey: .isSettingsSelected)
+            try container.encode(preferences, forKey: .preferences)
+        }
+    }
 
     private func saveState() {
         guard !isRestoringState else { return }
@@ -489,21 +540,19 @@ final class WorkspaceStore {
             tabs: stateTabs,
             selectedFileURL: selectedFileURL,
             isSettingsSelected: isSettingsSelected,
-            editorFontSize: editorFontSize,
-            tabBehavior: tabBehavior,
-            appLanguage: appLanguage
+            preferences: preferences
         )
         
         do {
             let data = try JSONEncoder().encode(state)
-            UserDefaults.standard.set(data, forKey: Self.stateKey)
+            UserDefaults.standard.set(data, forKey: UserDefaultsKey.workspaceState)
         } catch {
             Self.logger.error("Failed to save workspace state: \(error.localizedDescription, privacy: .public)")
         }
     }
 
     private func loadState() -> WorkspaceState? {
-        guard let data = UserDefaults.standard.data(forKey: Self.stateKey) else {
+        guard let data = UserDefaults.standard.data(forKey: UserDefaultsKey.workspaceState) else {
             return nil
         }
         
@@ -521,11 +570,7 @@ final class WorkspaceStore {
 
         var restoredSelectedTabID: UUID?
         
-        editorFontSize = state.editorFontSize
-        tabBehavior = state.tabBehavior
-        if let loadedLanguage = state.appLanguage {
-            appLanguage = loadedLanguage
-        }
+        preferences = state.preferences
         
         for tabState in state.tabs {
             if tabState.isSettings {
@@ -550,34 +595,80 @@ final class WorkspaceStore {
         } else if let restoredSelectedTabID {
             selectedTabID = restoredSelectedTabID
             loadTabContentIfNeeded(id: restoredSelectedTabID)
+            applyEditorFontPreferenceForSelectedTab()
         } else {
             selectedTabID = tabs.first?.id
             if let id = selectedTabID {
                 loadTabContentIfNeeded(id: id)
+                applyEditorFontPreferenceForSelectedTab()
             }
         }
     }
 
-    private func updateAppleLanguages() {
+    private func handlePreferencesChange(
+        from oldPreferences: WorkspacePreferences,
+        to newPreferences: WorkspacePreferences
+    ) {
+        guard !isRestoringState else {
+            return
+        }
+
+        if oldPreferences.appLanguage != newPreferences.appLanguage {
+            updateAppleLanguages(for: newPreferences.appLanguage)
+        }
+
+        saveState()
+    }
+
+    private func updateAppleLanguages(for appLanguage: AppLanguage) {
         // Only update if it actually differs from what's currently in UserDefaults
         // to avoid triggering "restart required" continuously.
         if appLanguage == .system {
-            if UserDefaults.standard.object(forKey: "AppleLanguages") != nil {
-                UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+            if UserDefaults.standard.object(forKey: UserDefaultsKey.appleLanguages) != nil {
+                UserDefaults.standard.removeObject(forKey: UserDefaultsKey.appleLanguages)
                 isLanguageChangePendingRestart = true
             }
         } else {
-            let currentLanguages = UserDefaults.standard.stringArray(forKey: "AppleLanguages")
+            let currentLanguages = UserDefaults.standard.stringArray(
+                forKey: UserDefaultsKey.appleLanguages
+            )
             if currentLanguages?.first != appLanguage.rawValue {
-                UserDefaults.standard.set([appLanguage.rawValue], forKey: "AppleLanguages")
+                UserDefaults.standard.set(
+                    [appLanguage.rawValue],
+                    forKey: UserDefaultsKey.appleLanguages
+                )
                 isLanguageChangePendingRestart = true
             }
         }
     }
-}
 
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
+    private func selectedEditorFontFileURL() -> URL? {
+        guard let selectedTabID,
+              let tab = tabs.first(where: { $0.id == selectedTabID }),
+              !tab.isSettings else {
+            return nil
+        }
+
+        return normalizedEditorFontFileURL(for: tab.fileURL)
+    }
+
+    private func normalizedEditorFontFileURL(for fileURL: URL?) -> URL? {
+        guard let fileURL else {
+            return nil
+        }
+
+        return persistenceService.normalizedFileURL(for: fileURL)
+    }
+
+    private func applyEditorFontPreferenceForSelectedTab() {
+        guard let selectedTabID,
+              let tab = tabs.first(where: { $0.id == selectedTabID }),
+              !tab.isSettings else {
+            return
+        }
+
+        preferences.applyRememberedEditorFontSize(
+            for: normalizedEditorFontFileURL(for: tab.fileURL)
+        )
     }
 }

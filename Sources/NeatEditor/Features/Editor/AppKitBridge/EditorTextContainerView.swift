@@ -6,6 +6,16 @@ final class EditorTextContainerView: NSView {
     private static let editorLineHeightMultiple: CGFloat = 1.08
     private static let searchHighlightColor = NSColor.controlAccentColor.withAlphaComponent(0.22)
     private var currentEditorFontSize: CGFloat = NSFont.systemFontSize
+    var textSoftness = WorkspacePreferences.EditorTextSoftnessConfiguration() {
+        didSet {
+            guard textSoftness != oldValue else {
+                return
+            }
+
+            updateTextViewColors()
+            applyDefaultTypingAttributes(using: editorMonospacedFont())
+        }
+    }
 
     var onIncreaseFontSize: () -> Void {
         didSet {
@@ -298,7 +308,7 @@ final class EditorTextContainerView: NSView {
         textView.defaultParagraphStyle = paragraphStyle
         textView.typingAttributes[.font] = font
         textView.typingAttributes[.paragraphStyle] = paragraphStyle
-        textView.typingAttributes[.foregroundColor] = Self.editorForegroundColor()
+        textView.typingAttributes[.foregroundColor] = editorForegroundColor()
     }
 
     private static func editorParagraphStyle() -> NSParagraphStyle {
@@ -307,8 +317,41 @@ final class EditorTextContainerView: NSView {
         return paragraphStyle
     }
 
-    private static func editorForegroundColor() -> NSColor {
-        .labelColor
+    private func editorForegroundColor() -> NSColor {
+        Self.editorForegroundColor(
+            for: effectiveAppearance,
+            textSoftness: textSoftness
+        )
+    }
+
+    private static func editorForegroundColor(
+        for appearance: NSAppearance,
+        textSoftness: WorkspacePreferences.EditorTextSoftnessConfiguration
+    ) -> NSColor {
+        let blendFraction: CGFloat
+
+        switch appearance.bestMatch(from: [
+            .accessibilityHighContrastDarkAqua,
+            .darkAqua,
+            .accessibilityHighContrastAqua,
+            .aqua
+        ]) {
+        case .accessibilityHighContrastDarkAqua, .accessibilityHighContrastAqua:
+            blendFraction = textSoftness.highContrastTextSoftness.clamped(to: 0...1)
+        case .darkAqua:
+            blendFraction = textSoftness.darkModeTextSoftness.clamped(to: 0...1)
+        default:
+            blendFraction = textSoftness.lightModeTextSoftness.clamped(to: 0...1)
+        }
+
+        var blendedColor = NSColor.labelColor
+        appearance.performAsCurrentDrawingAppearance {
+            let baseColor = NSColor.labelColor
+            let softenedColor = NSColor.secondaryLabelColor
+            blendedColor = baseColor.blended(withFraction: blendFraction, of: softenedColor) ?? baseColor
+        }
+
+        return blendedColor
     }
 
     private func configureScrollView() {
@@ -349,7 +392,7 @@ final class EditorTextContainerView: NSView {
             separatorView.leadingAnchor.constraint(equalTo: lineNumberView.trailingAnchor),
             separatorView.topAnchor.constraint(equalTo: topAnchor),
             separatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            separatorView.widthAnchor.constraint(equalToConstant: 0.5),
+            separatorView.widthAnchor.constraint(equalToConstant: EditorChrome.lineWidth),
 
             scrollView.leadingAnchor.constraint(equalTo: separatorView.trailingAnchor),
             scrollView.topAnchor.constraint(equalTo: topAnchor),
@@ -363,8 +406,11 @@ final class EditorTextContainerView: NSView {
     }
 
     private func updateTextViewColors() {
-        textView.textColor = Self.editorForegroundColor()
+        textView.textColor = Self.editorForegroundColor(
+            for: effectiveAppearance,
+            textSoftness: textSoftness
+        )
         textView.backgroundColor = .controlBackgroundColor
-        textView.insertionPointColor = Self.editorForegroundColor()
+        textView.insertionPointColor = .labelColor
     }
 }

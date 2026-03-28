@@ -21,7 +21,7 @@ struct DocumentPersistenceService {
     ) {
         self.fileManager = fileManager
         self.defaultDirectory = defaultDirectory
-            ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+            ?? Self.resolveDefaultDirectory(using: fileManager)
     }
 
     func save(tab: EditorTab) throws -> EditorTab {
@@ -95,6 +95,14 @@ struct DocumentPersistenceService {
 
     func normalizedFileURL(for fileURL: URL) -> URL {
         fileURL.standardizedFileURL.resolvingSymlinksInPath()
+    }
+
+    private static func resolveDefaultDirectory(using fileManager: FileManager) -> URL {
+        fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent(
+                "Documents",
+                isDirectory: true
+            )
     }
 
     private func renamedFileURL(for fileURL: URL, title: String) -> URL {

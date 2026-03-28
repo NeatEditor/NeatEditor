@@ -155,7 +155,7 @@ final class LineNumberGutterView: NSView {
     }
 
     static var separatorColor: NSColor {
-        NSColor.separatorColor.withAlphaComponent(0.35)
+        EditorChrome.borderColor
     }
 
     private func registerObservers(scrollView: NSScrollView, textView: NSTextView) {
