@@ -1,7 +1,7 @@
 name: NeatEditor
 
 options:
-  bundleIdPrefix: com.geraltgraham
+  bundleIdPrefix: com.x0c
   deploymentTarget:
     macOS: "15.0"
   xcodeVersion: "16.2"
@@ -32,7 +32,7 @@ targets:
       - Sources/NeatEditor
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.geraltgraham.NeatEditor
+        PRODUCT_BUNDLE_IDENTIFIER: com.x0c.NeatEditor
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/NeatEditor/App/Info.plist
         SWIFT_VERSION: 6.0

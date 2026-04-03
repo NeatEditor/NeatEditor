@@ -27,7 +27,7 @@ final class WorkspaceStore {
     }
 
     private static let logger = Logger(
-        subsystem: "com.geraltgraham.NeatEditor",
+        subsystem: "com.x0c.NeatEditor",
         category: "Workspace"
     )
 

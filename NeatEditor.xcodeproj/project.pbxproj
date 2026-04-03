@@ -328,7 +328,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.geraltgraham.NeatEditor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.NeatEditor;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
 			};
@@ -407,7 +407,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.geraltgraham.NeatEditor;
+				PRODUCT_BUNDLE_IDENTIFIER = com.x0c.NeatEditor;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
 			};

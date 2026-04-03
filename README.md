@@ -8,7 +8,13 @@
 
 > A minimal, fast-launching macOS plain text editor built with SwiftUI and AppKit for distraction-free writing, native desktop interactions, and efficient multi-tab editing.
 
-[简体中文说明](./README.zh-CN.md)
+**Languages:** [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Français](./README.fr.md) | [Deutsch](./README.de.md)
+
+## Screenshot
+
+<p align="center">
+  <img src="./docs/images/neateditor-main-window.png" alt="NeatEditor screenshot showing the main writing workspace on macOS" width="1201" />
+</p>
 
 ## Why NeatEditor
 
@@ -95,6 +101,9 @@ See [RELEASING.md](./RELEASING.md) for details.
 
 ```text
 NeatEditor/
+├── docs/
+│   └── images/
+│       └── neateditor-main-window.png
 ├── project.yml
 ├── README.md
 ├── CONTRIBUTING.md
@@ -113,6 +122,11 @@ NeatEditor/
 
 ## Repository Docs
 
+- [README.ja.md](./README.ja.md): Japanese overview
+- [README.ko.md](./README.ko.md): Korean overview
+- [README.es.md](./README.es.md): Spanish overview
+- [README.fr.md](./README.fr.md): French overview
+- [README.de.md](./README.de.md): German overview
 - [README.zh-CN.md](./README.zh-CN.md): Simplified Chinese overview
 - [CONTRIBUTING.md](./CONTRIBUTING.md): development environment and contribution notes
 - [CHANGELOG.md](./CHANGELOG.md): project release history
@@ -123,7 +137,6 @@ NeatEditor/
 
 These are reasonable next steps after the initial public release:
 
-- Add screenshots or a short demo GIF for a stronger first impression.
 - Add a test target for save, rename, and state restoration flows.
 - Add Apple code signing, notarization, and DMG packaging for smoother distribution.
 - Add a general CI workflow for pushes and pull requests.

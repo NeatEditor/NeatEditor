@@ -8,7 +8,13 @@
 
 > 一个极简、快速启动的 macOS 纯文本编辑器，基于 SwiftUI 与 AppKit 构建，专注无干扰写作、原生桌面交互和高效多标签编辑。
 
-[English README](./README.md)
+**语言版本：** [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Français](./README.fr.md) | [Deutsch](./README.de.md)
+
+## 截图
+
+<p align="center">
+  <img src="./docs/images/neateditor-main-window.png" alt="NeatEditor 主工作区截图" width="1201" />
+</p>
 
 ## 为什么是 NeatEditor
 
@@ -94,6 +100,11 @@ git push origin v1.0.0
 ## 仓库文档
 
 - [README.md](./README.md)：英文主 README
+- [README.ja.md](./README.ja.md)：日文说明
+- [README.ko.md](./README.ko.md)：韩文说明
+- [README.es.md](./README.es.md)：西班牙文说明
+- [README.fr.md](./README.fr.md)：法文说明
+- [README.de.md](./README.de.md)：德文说明
 - [CONTRIBUTING.md](./CONTRIBUTING.md)：贡献和开发说明
 - [CHANGELOG.md](./CHANGELOG.md)：版本变更记录
 - [RELEASING.md](./RELEASING.md)：GitHub Release 流程
