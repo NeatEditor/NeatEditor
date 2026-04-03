@@ -36,6 +36,24 @@ NeatEditor se construyó con un objetivo simple: reducir el ruido de la interfaz
 - Renombrado en disco que conserva extensiones editables.
 - El contenido en blanco no sobrescribe archivos existentes por diseño.
 
+## Atajos principales
+
+| Atajo | Acción |
+| --- | --- |
+| `Command + N` | Crea un documento nuevo. |
+| `Command + T` | Abre otra pestaña nueva. |
+| `Command + O` | Abre uno o varios archivos de texto locales. |
+| `Command + S` | Guarda de inmediato la pestaña actual. |
+| `Command + W` | Guarda y cierra la pestaña actual. |
+| `Shift + Command + T` | Reabre la pestaña cerrada más recientemente. |
+| `Command + F` | Muestra la barra de búsqueda integrada del editor actual. |
+| `Command + =` o `Command + +` | Aumenta el zoom del texto del editor. |
+| `Command + -` | Reduce el zoom del texto del editor. |
+| `Command + ,` | Abre Ajustes. |
+| `Shift + Return` | Inserta una línea nueva al final de la línea actual. |
+
+Los atajos de texto nativos de macOS, como `Command + Z`, `Command + X`, `Command + C` y `Command + V`, también funcionan a través del sistema de texto nativo.
+
 ## Estado actual
 
 NeatEditor ya está listo para usarse como un editor ligero de texto plano para macOS y se publica como `1.0.0`.

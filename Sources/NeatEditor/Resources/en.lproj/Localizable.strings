@@ -35,6 +35,8 @@
 "Show in Finder" = "Show in Finder";
 "Close Other Tabs" = "Close Other Tabs";
 "Move to Trash" = "Move to Trash";
+"Cancel" = "Cancel";
+"\"%@\" will be moved to the Trash and can be restored from there." = "\"%@\" will be moved to the Trash and can be restored from there.";
 "Rename Failed" = "Rename Failed";
 "“%@” already exists in this folder. Use a different name and try again." = "“%@” already exists in this folder. Use a different name and try again.";
 "Failed to load document: %@" = "Failed to load document: %@";
@@ -44,10 +46,6 @@
 "Invalid JSON structure or value type: %@" = "Invalid JSON structure or value type: %@";
 "Could not generate configuration JSON." = "Could not generate configuration JSON.";
 
-"关闭其他标签" = "Close Other Tabs";
-"移至废纸篓" = "Move to Trash";
-"取消" = "Cancel";
-"\"%@\" 将被移至废纸篓，可从废纸篓还原。" = "\"%@\" will be moved to the Trash and can be restored from there.";
 "Disable Always on Top" = "Disable Always on Top";
 "Enable Always on Top" = "Enable Always on Top";
 

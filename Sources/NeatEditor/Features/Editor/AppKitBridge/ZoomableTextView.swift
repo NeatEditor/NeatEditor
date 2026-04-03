@@ -158,7 +158,7 @@ final class ZoomableTextView: NSTextView {
         let currentLineRange = currentText.lineRange(
             for: NSRange(location: insertionLocation, length: 0)
         )
-        // 计算当前行结尾（不含换行符）的位置
+        // Find the end of the current line without including the trailing newline.
         let lineEnd = NSMaxRange(currentLineRange)
         let lineEndWithoutNewline: Int
         if lineEnd > 0 {
@@ -170,7 +170,7 @@ final class ZoomableTextView: NSTextView {
         } else {
             lineEndWithoutNewline = lineEnd
         }
-        // 将光标移到行末（不含换行符），再插入换行
+        // Move the insertion point to the logical line end, then insert a newline.
         setSelectedRange(NSRange(location: lineEndWithoutNewline, length: 0))
         insertText("\n", replacementRange: selectedRange())
     }

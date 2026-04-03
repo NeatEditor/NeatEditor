@@ -35,6 +35,8 @@
 "Show in Finder" = "在 Finder 中显示";
 "Close Other Tabs" = "关闭其他标签";
 "Move to Trash" = "移至废纸篓";
+"Cancel" = "取消";
+"\"%@\" will be moved to the Trash and can be restored from there." = "\"%@\" 将被移至废纸篓，可从废纸篓还原。";
 "Rename Failed" = "重命名失败";
 "“%@” already exists in this folder. Use a different name and try again." = "“%@” 已经存在于此文件夹中。请改用其他名称后重试。";
 "Failed to load document: %@" = "文档加载失败：%@";
@@ -44,10 +46,6 @@
 "Invalid JSON structure or value type: %@" = "JSON 结构或值类型不正确：%@";
 "Could not generate configuration JSON." = "无法生成配置 JSON。";
 
-"关闭其他标签" = "关闭其他标签";
-"移至废纸篓" = "移至废纸篓";
-"取消" = "取消";
-"\"%@\" 将被移至废纸篓，可从废纸篓还原。" = "\"%@\" 将被移至废纸篓，可从废纸篓还原。";
 "Disable Always on Top" = "取消置顶";
 "Enable Always on Top" = "窗口置顶";
 

@@ -1,95 +1,95 @@
-# Tab Strip Gestures (标签栏手势需求与实现规范)
+# Tab Strip Gestures
 
-本文件说明了 `EditorTabStripView.swift` 及其子视图中手势（Gestures）的设计需求与实现细节。
-
----
-
-## 需求概览
-
-1. **单点击 Tab**:
-   * **行为**: 立即切换选中的标签页。
-   * **性能需求**: **无延迟**。不可因为等待双击而使单点击操作产生明显滞后感。
-
-2. **双击已激活 (Selected) Tab**:
-   * **行为**: 触发当前标签的文件名编辑重命名。
-
-3. **双击未激活 (Inactive) Tab**:
-   * **行为**: **仅选中**，不可触发文件名编辑重命名。
-
-4. **双击 Titlebar 空白区域**:
-   * **行为**: 放大/缩小（Maximize/Minimize）窗口（跟随 macOS 的 "AppleActionOnDoubleClick" 系统偏好设置）。
-
-5. **编辑文件名时单击重命名框内部**:
-   * **行为**: 正常的光标定位，不退出编辑模式。
-
-6. **编辑文件名时点击标题栏以外区域（编辑器、其他窗口等）**:
-   * **行为**: 保存已编辑的文件名并退出编辑模式。
-
-7. **编辑文件名时切换到其他 App**:
-   * **行为**: 保存已编辑的文件名并退出编辑模式。
+This document describes the gesture requirements and implementation details for `EditorTabStripView.swift` and its child views.
 
 ---
 
-## 核心约束：为什么不能用 SwiftUI 手势
+## Requirements Overview
 
-**禁止在 `EditorTabStripView` 或其祖先上使用任何 `.onTapGesture` 或 `.simultaneousGesture(TapGesture(...))`。**
+1. **Single-click a tab**
+   * **Behavior**: Switch to the selected tab immediately.
+   * **Performance requirement**: **No delay**. Single-clicks must not feel slower because the system is waiting to see whether the user double-clicks.
 
-原因：SwiftUI 的多次点击手势（`TapGesture(count: 2)`、`.onTapGesture(count: 2)`）会在整个视图树上注入手势判定延迟。即使只在父视图上添加 `count: 2`，所有子视图的 `count: 1` 手势（包括 Button action）也会被迫等待双击判定窗口（约 250ms）才能触发。这直接违反需求 1 的"无延迟"要求。
+2. **Double-click the active tab**
+   * **Behavior**: Enter inline rename mode for the current tab title.
 
-**结论**: 所有点击/双击逻辑必须绕过 SwiftUI 手势系统，使用以下两种机制：
-- **Tab 点击/双击**: SwiftUI `Button` action（立即响应）+ 手动时间戳双击检测
-- **标题栏空白区域双击 & 编辑退出**: AppKit `NSEvent.addLocalMonitorForEvents`
+3. **Double-click an inactive tab**
+   * **Behavior**: Select the tab only. It must not enter rename mode.
+
+4. **Double-click empty title bar space**
+   * **Behavior**: Trigger the macOS title bar zoom action, following the system's `AppleActionOnDoubleClick` preference.
+
+5. **Click inside the rename field while editing**
+   * **Behavior**: Move the insertion point normally without leaving edit mode.
+
+6. **Click outside the title bar while editing**
+   * **Behavior**: Save the edited title and leave edit mode.
+
+7. **Switch to another app while editing**
+   * **Behavior**: Save the edited title and leave edit mode.
 
 ---
 
-## 实现架构
+## Core Constraint: Why SwiftUI Gestures Are Not Allowed
 
-### 参与组件
+**Do not add `.onTapGesture` or `.simultaneousGesture(TapGesture(...))` to `EditorTabStripView` or any of its ancestors.**
 
-| 组件 | 职责 |
+Reason: SwiftUI multi-click gestures (`TapGesture(count: 2)` and `.onTapGesture(count: 2)`) inject click recognition delay into the entire view tree. Even if the double-click handler lives on a parent, child views with single-click interactions, including `Button` actions, are forced to wait for the double-click window (about 250 ms). That directly violates the no-delay requirement above.
+
+**Conclusion**: All click and double-click handling must bypass the SwiftUI gesture system and use the following mechanisms instead:
+- **Tab click and double-click**: SwiftUI `Button` action for immediate response plus manual timestamp-based double-click detection
+- **Empty title bar double-click and edit dismissal**: AppKit `NSEvent.addLocalMonitorForEvents`
+
+---
+
+## Architecture
+
+### Participating Components
+
+| Component | Responsibility |
 |------|------|
-| `EditorTabStripView` | 父容器，持有 `editingTabID` 状态，提供 `dismissEditing()` |
-| `EditorTabItemView` | 每个标签页，内含 SwiftUI `Button`，处理单击/双击/重命名 |
-| `TitleBarEventMonitor` | `NSViewRepresentable`，AppKit 层事件监听器 |
-| `tabStripSuppressNextZoom` | 文件级标志，协调 tab 双击与标题栏 zoom 的冲突 |
-| `tabStripPendingRename` | 文件级标志，存储待保存的文件名（供外部 dismiss 时读取） |
+| `EditorTabStripView` | Parent container that owns `editingTabID` state and provides `dismissEditing()` |
+| `EditorTabItemView` | Per-tab view with a SwiftUI `Button` that handles click, double-click, and rename |
+| `TitleBarEventMonitor` | `NSViewRepresentable` event monitor at the AppKit layer |
+| `tabStripSuppressNextZoom` | File-scoped flag that prevents a tab double-click from also triggering title bar zoom |
+| `tabStripPendingRename` | File-scoped flag that stores the pending renamed title for external dismiss paths |
 
-### 数据流图
+### Data Flow
 
-```
-用户点击
-  │
-  ├─ mouseDown ──→ TitleBarEventMonitor
-  │                  ├─ 在标题栏外 + 正在编辑 → dismissEditing()
-  │                  └─ 其他 → 不处理
-  │
-  └─ mouseUp ───→ TitleBarEventMonitor
-  │                  └─ clickCount >= 2 + 在标题栏内 + 本窗口
-  │                       → async { 检查 suppress → zoom 或跳过 }
-  │
-  └─ mouseUp ───→ SwiftUI Button (EditorTabItemView.handleClick)
-                     ├─ 设 tabStripSuppressNextZoom = true
-                     ├─ 已选中 + 时间戳双击检测 → 进入编辑模式
-                     └─ 其他 → onSelectTab
+```text
+User input
+  |
+  |- mouseDown --> TitleBarEventMonitor
+  |                 |- Outside title bar + editing in progress -> dismissEditing()
+  |                 `- Otherwise -> ignore
+  |
+  |- mouseUp ----> TitleBarEventMonitor
+  |                 `- clickCount >= 2 + inside title bar + same window
+  |                    -> async { check suppress flag -> zoom or skip }
+  |
+  `- mouseUp ----> SwiftUI Button (EditorTabItemView.handleClick)
+                    |- Set tabStripSuppressNextZoom = true
+                    |- Selected tab + timestamp double-click check -> begin editing
+                    `- Otherwise -> onSelectTab
 ```
 
 ---
 
-## 详细实现说明
+## Detailed Implementation Notes
 
-### 1. Tab 单击切换（无延迟）
+### 1. Single-click tab switching with no delay
 
-`EditorTabItemView` 使用 SwiftUI `Button`（`.buttonStyle(.plain)`），action 直接调用 `handleClick()`。Button 在 mouseUp 立即响应，无任何手势判定延迟。
+`EditorTabItemView` uses a SwiftUI `Button` with `.buttonStyle(.plain)`, and the action directly calls `handleClick()`. `Button` fires immediately on `mouseUp` without gesture recognition delay.
 
-### 2. Tab 双击重命名（手动时间戳检测）
+### 2. Double-click rename via manual timestamp detection
 
-`handleClick()` 内部用 `lastSelectedClickTime` + `NSEvent.doubleClickInterval` 手动判定双击：
+Inside `handleClick()`, double-clicks are detected manually with `lastSelectedClickTime` and `NSEvent.doubleClickInterval`:
 
 ```swift
 if isSelected {
     let now = Date()
     if now.timeIntervalSince(lastSelectedClickTime) < NSEvent.doubleClickInterval {
-        // 双击已选中 tab → 进入编辑模式
+        // Double-clicking the selected tab enters rename mode.
         isEditing = true
         return
     }
@@ -97,19 +97,19 @@ if isSelected {
 }
 ```
 
-关键点：
-- 只有 `isSelected == true` 时才记录时间戳和检测双击
-- 未选中 tab 的双击：第 1 次点击切换选中（`lastSelectedClickTime` 重置为 `.distantPast`），第 2 次点击才开始计时，所以永远不会触发重命名
+Key details:
+- Record timestamps and check for double-clicks only when `isSelected == true`.
+- A double-click on an inactive tab never renames it: the first click only selects the tab and resets `lastSelectedClickTime` to `.distantPast`, so the second click is treated as the first eligible click for rename timing.
 
-### 3. 标题栏空白区域双击 Zoom（AppKit NSEvent Monitor）
+### 3. Empty title bar double-click zoom via AppKit event monitoring
 
-`TitleBarEventMonitor`（`NSViewRepresentable`）内含 `TitleBarEventNSView`，通过 `NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp])` 监听所有本地鼠标事件。
+`TitleBarEventMonitor` is an `NSViewRepresentable` that hosts `TitleBarEventNSView`, which listens to all local mouse events through `NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp])`.
 
-**Zoom 在 mouseUp 检测**（不是 mouseDown），原因：
-- SwiftUI Button 在 mouseUp 触发 action
-- NSEvent monitor 在 mouseDown 触发时，Button action 尚未执行，suppress 标志未设置
-- 如果在 mouseDown 检测 zoom 并用 `asyncAfter` 延迟，延迟时间不可靠（mouseDown → mouseUp 间隔 100-400ms 不等）
-- 改在 mouseUp 检测 + `DispatchQueue.main.async`（零延迟下一个 run loop），此时 Button action 已同步执行完毕
+**Zoom is checked on `mouseUp`, not `mouseDown`**, because:
+- SwiftUI `Button` actions fire on `mouseUp`.
+- During `mouseDown`, the `Button` action has not run yet, so the suppress flag is not set.
+- Detecting zoom on `mouseDown` and trying to coordinate with `asyncAfter` is unreliable because the time from `mouseDown` to `mouseUp` varies widely.
+- Detecting on `mouseUp` and then using `DispatchQueue.main.async` waits exactly one run loop, by which point the `Button` action has already completed.
 
 ```swift
 } else if event.type == .leftMouseUp {
@@ -127,15 +127,15 @@ if isSelected {
 }
 ```
 
-**标题栏区域判定**: 因为窗口使用 `.hiddenTitleBar`，`contentLayoutRect` 等于整个窗口，所以用绝对坐标判断：`event.locationInWindow.y >= (windowHeight - titleBarHeight)`。
+**Title bar hit testing**: Because the window uses `.hiddenTitleBar`, `contentLayoutRect` matches the entire window. The implementation therefore uses absolute coordinates: `event.locationInWindow.y >= (windowHeight - titleBarHeight)`.
 
-### 4. Suppress 标志协调机制
+### 4. Suppress flag coordination
 
-`tabStripSuppressNextZoom`（文件级 `nonisolated(unsafe) var`）用于防止 tab 上的双击同时触发 zoom：
+`tabStripSuppressNextZoom`, a file-scoped `nonisolated(unsafe) var`, prevents a tab double-click from also triggering title bar zoom:
 
-- `handleClick()` 中**每次点击**都设 `true`（不仅是双击时），因为 monitor 的 zoom 检测看的是 `event.clickCount >= 2`，而第 1 次点击设的 flag 需要在第 2 次 mouseUp 时仍然有效
-- 设置后通过 `asyncAfter(NSEvent.doubleClickInterval + 0.1)` 自动清除，防止 flag 泄漏到后续无关事件
-- **Auto-clear 必须 > doubleClickInterval**，否则两次点击之间 flag 就过期了（第 1 次点击设 flag → 等 250ms → 第 2 次点击 → flag 已清除 → zoom 误触发）
+- `handleClick()` sets the flag to `true` on **every click**, not just the second click, because the event monitor checks `event.clickCount >= 2` and still needs the first click's flag to be alive when the second `mouseUp` arrives.
+- The flag is cleared automatically with `asyncAfter(NSEvent.doubleClickInterval + 0.1)` so it never leaks into unrelated future events.
+- **The auto-clear timeout must be greater than `doubleClickInterval`**. If it expires too early, the first click's flag disappears before the second click arrives and title bar zoom is triggered accidentally.
 
 ```swift
 tabStripSuppressNextZoom = true
@@ -144,67 +144,67 @@ DispatchQueue.main.asyncAfter(deadline: .now() + NSEvent.doubleClickInterval + 0
 }
 ```
 
-### 5. 编辑模式退出与文件名保存
+### 5. Leaving edit mode and saving the title
 
-编辑模式有两条退出路径，commit 逻辑不同：
+Edit mode has multiple exit paths with slightly different commit behavior:
 
-#### 路径 A：Enter 键（onSubmit）
-`commitTitleEditing()` 直接调用 `onRename(sanitizedTitle)`，然后设 `isEditing = false`。
+#### Path A: Press Enter (`onSubmit`)
+`commitTitleEditing()` calls `onRename(sanitizedTitle)` directly and then sets `isEditing = false`.
 
-#### 路径 B：点击外部（monitor dismiss）
-1. Monitor 在 mouseDown 检测到点击在标题栏区域外（`!isClickInTitleBarRegion`）
-2. 异步调用 `EditorTabStripView.dismissEditing()`
-3. `dismissEditing()` 从 `tabStripPendingRename` 读取已编辑标题，调用 `onRenameTab`
-4. 设 `editingTabID = nil` → `isEditing` 变 false → TextField 消失
+#### Path B: Click outside (`monitor` dismiss)
+1. The monitor sees a `mouseDown` outside the title bar region (`!isClickInTitleBarRegion`).
+2. It asynchronously calls `EditorTabStripView.dismissEditing()`.
+3. `dismissEditing()` reads the pending title from `tabStripPendingRename` and calls `onRenameTab`.
+4. It sets `editingTabID = nil`, which makes `isEditing` false and removes the `TextField`.
 
-**为什么用 `tabStripPendingRename` 而不是 `onDisappear`**:
-- `onDisappear` 在 view 拆除过程中触发，此时写 Binding（`isEditing = false`）或调 `onRename` 会触发 re-render 级联，导致 CPU 100%
-- `tabStripPendingRename` 通过 `onChange(of: draftTitle)` 实时同步，`dismissEditing()` 在 TextField 消失之前读取
+**Why `tabStripPendingRename` is used instead of `onDisappear`**:
+- `onDisappear` fires while the view is being torn down. Writing back to bindings at that point, such as `isEditing = false`, or calling `onRename` can trigger a render cascade and spike CPU usage.
+- `tabStripPendingRename` is kept in sync through `onChange(of: draftTitle)`, so `dismissEditing()` can read the current draft title before the field disappears.
 
-#### 路径 C：切换到其他 App
-`NSApplication.didResignActiveNotification` → 同路径 B。
+#### Path C: Switch to another app
+`NSApplication.didResignActiveNotification` follows the same path as Path B.
 
-### 6. 编辑模式内单击不退出
+### 6. Clicking inside the rename field does not dismiss edit mode
 
-Monitor 的 mouseDown dismiss 只在 `!isClickInTitleBarRegion(event)` 时触发。重命名 TextField 在标题栏区域内，所以点击 TextField 不会触发 dismiss，光标定位正常工作。
+The monitor only dismisses editing on `mouseDown` when `!isClickInTitleBarRegion(event)` is true. The rename `TextField` lives inside the title bar region, so clicking it does not dismiss editing and caret movement works as expected.
 
 ---
 
-## 已踩过的坑（维护提醒）
+## Pitfalls and Maintenance Notes
 
-### 不要做
+### Do Not Do These Things
 
-1. **不要在 EditorTabStripView 或其祖先上添加 `.onTapGesture`、`.simultaneousGesture(TapGesture(...))`** — 会给所有子视图引入 ~250ms 点击延迟。
+1. **Do not add `.onTapGesture` or `.simultaneousGesture(TapGesture(...))` to `EditorTabStripView` or its ancestors.** This introduces roughly 250 ms of click delay to child views.
 
-2. **不要在 `onDisappear` 里写 Binding 或调 model 修改方法** — view 拆除过程中写 Binding 会触发 re-render 级联，快速双击时 TextField 反复创建/销毁会放大为 CPU 100%。
+2. **Do not write to bindings or mutate the model from `onDisappear`.** During view teardown, that can trigger render cascades. With rapid double-clicks, repeated `TextField` creation and destruction can spike CPU usage dramatically.
 
-3. **不要用 `asyncAfter` 固定毫秒数来协调 mouseDown 和 Button action** — mouseDown → mouseUp 间隔不固定（100-400ms），任何固定延迟都不可靠。正确做法是在 mouseUp 检测 zoom。
+3. **Do not use a fixed `asyncAfter` delay to coordinate `mouseDown` with the `Button` action.** The interval between `mouseDown` and `mouseUp` is not stable, so fixed delays are unreliable. Zoom detection belongs on `mouseUp`.
 
-4. **不要用 `onChange(of: isEditing)` 来触发 commit** — `commitTitleEditing()` 写 `isEditing = false`（通过 Binding 连到 `editingTabID`），可能形成写入 → 通知 → 写入的无限循环。
+4. **Do not trigger commits from `onChange(of: isEditing)`.** `commitTitleEditing()` sets `isEditing = false` through the `editingTabID` binding, which can create a write-notify-write loop.
 
-5. **不要用 `view is NSText` 来判断点击是否在重命名框内** — 编辑器主体也是 `NSTextView`（继承自 `NSText`），会误判。当前实现用区域判断（标题栏内/外）替代类型判断。
+5. **Do not use `view is NSText` to decide whether the click happened inside the rename field.** The editor itself is also an `NSTextView` subclass, so type checks misclassify clicks. The current implementation uses title bar region checks instead.
 
-6. **Auto-clear suppress 标志的超时不能太短** — 必须 > `NSEvent.doubleClickInterval`，否则第 1 次点击设的 flag 在第 2 次点击到来前就过期了。
+6. **Do not make the suppress auto-clear timeout too short.** It must remain greater than `NSEvent.doubleClickInterval`, or the first click's flag will expire before the second click lands.
 
-### 时序模型
+### Timing Model
 
-双击已选中 tab 的完整时序：
+Full sequence for double-clicking the selected tab:
+```text
+t=0ms     1st mouseDown  -> monitor: clickCount=1, ignore zoom
+t=100ms   1st mouseUp    -> Button handleClick: suppress=true, lastSelectedClickTime=now
+t=300ms   2nd mouseDown  -> monitor: clickCount=2, but still mouseDown, ignore zoom
+t=400ms   2nd mouseUp    -> monitor: clickCount=2, inside title bar, async { check suppress }
+                          -> Button handleClick: detect double-click -> enter edit mode, suppress=true
+t=401ms   async block    -> suppress=true -> skip zoom
+t=500ms   auto-clear     -> suppress=false (from the 1st click's asyncAfter)
 ```
-t=0ms     1st mouseDown  → monitor: clickCount=1, 不处理 zoom
-t=100ms   1st mouseUp    → Button handleClick: suppress=true, lastSelectedClickTime=now
-t=300ms   2nd mouseDown  → monitor: clickCount=2 but this is mouseDown, 不处理 zoom
-t=400ms   2nd mouseUp    → monitor: clickCount=2, 在标题栏, async { 检查 suppress }
-                          → Button handleClick: 检测双击 → 进入编辑模式, suppress=true
-t=401ms   async block    → suppress=true → 跳过 zoom ✓
-t=500ms   auto-clear     → suppress=false（从 1st click 的 asyncAfter）
-```
 
-双击标题栏空白区域的完整时序：
-```
-t=0ms     1st mouseDown  → monitor: clickCount=1
-t=100ms   1st mouseUp    → monitor: clickCount=1, 跳过. 无 Button 在此处, suppress 不变
-t=300ms   2nd mouseDown  → monitor: clickCount=2 but mouseDown, 不处理
-t=400ms   2nd mouseUp    → monitor: clickCount=2, async { 检查 suppress }
-                          → 无 Button, suppress 仍 false
-t=401ms   async block    → suppress=false → performTitleBarDoubleClickAction() ✓
+Full sequence for double-clicking empty title bar space:
+```text
+t=0ms     1st mouseDown  -> monitor: clickCount=1
+t=100ms   1st mouseUp    -> monitor: clickCount=1, skip. No Button here, suppress unchanged
+t=300ms   2nd mouseDown  -> monitor: clickCount=2, but still mouseDown, ignore
+t=400ms   2nd mouseUp    -> monitor: clickCount=2, async { check suppress }
+                          -> No Button involved, suppress is still false
+t=401ms   async block    -> suppress=false -> performTitleBarDoubleClickAction()
 ```

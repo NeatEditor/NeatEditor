@@ -36,6 +36,24 @@ NeatEditor repose sur un objectif simple : réduire le bruit de l’interface et
 - Renommage sur disque qui conserve les extensions modifiables.
 - Le contenu vide n’écrase jamais un fichier existant par conception.
 
+## Raccourcis principaux
+
+| Raccourci | Action |
+| --- | --- |
+| `Command + N` | Crée un nouveau document. |
+| `Command + T` | Ouvre un nouvel onglet supplémentaire. |
+| `Command + O` | Ouvre un ou plusieurs fichiers texte locaux. |
+| `Command + S` | Sauvegarde immédiatement l’onglet actuel. |
+| `Command + W` | Sauvegarde puis ferme l’onglet actuel. |
+| `Shift + Command + T` | Rouvre l’onglet fermé le plus récemment. |
+| `Command + F` | Affiche la barre de recherche intégrée de l’éditeur courant. |
+| `Command + =` ou `Command + +` | Agrandit le texte dans l’éditeur. |
+| `Command + -` | Réduit le texte dans l’éditeur. |
+| `Command + ,` | Ouvre les réglages. |
+| `Shift + Return` | Insère une nouvelle ligne à la fin de la ligne actuelle. |
+
+Les raccourcis de texte natifs de macOS, comme `Command + Z`, `Command + X`, `Command + C` et `Command + V`, restent aussi disponibles via le système de texte natif.
+
 ## État actuel
 
 NeatEditor est déjà prêt comme éditeur léger de texte brut pour macOS et est publié en `1.0.0`.

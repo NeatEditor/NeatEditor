@@ -36,6 +36,24 @@ NeatEditor folgt einem einfachen Ziel: weniger UI-Rauschen und mehr Fokus auf de
 - Umbenennen gespeicherter Dokumente synchronisiert den Dateinamen auf der Festplatte und erhält bearbeitbare Endungen.
 - Leerer Inhalt überschreibt vorhandene Dateien absichtlich nicht.
 
+## Wichtige Kurzbefehle
+
+| Kurzbefehl | Aktion |
+| --- | --- |
+| `Command + N` | Erstellt ein neues Dokument. |
+| `Command + T` | Öffnet einen weiteren neuen Tab. |
+| `Command + O` | Öffnet eine oder mehrere lokale Textdateien. |
+| `Command + S` | Speichert den aktuellen Tab sofort. |
+| `Command + W` | Speichert und schließt den aktuellen Tab. |
+| `Shift + Command + T` | Öffnet den zuletzt geschlossenen Tab erneut. |
+| `Command + F` | Zeigt die integrierte Suchleiste des aktuellen Editors an. |
+| `Command + =` oder `Command + +` | Vergrößert den Editor-Text. |
+| `Command + -` | Verkleinert den Editor-Text. |
+| `Command + ,` | Öffnet die Einstellungen. |
+| `Shift + Return` | Fügt am Ende der aktuellen Zeile eine neue Zeile ein. |
+
+Native macOS-Textkurzbefehle wie `Command + Z`, `Command + X`, `Command + C` und `Command + V` funktionieren ebenfalls über das native Textsystem.
+
 ## Aktueller Stand
 
 NeatEditor ist als leichter Plain-Text-Editor für macOS einsatzbereit und wird als `1.0.0` veröffentlicht.

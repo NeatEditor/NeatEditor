@@ -1,6 +1,6 @@
 # Contributing to NeatEditor
 
-感谢你愿意关注或参与 NeatEditor。
+Thank you for your interest in contributing to NeatEditor.
 
 ## Development Environment
 
@@ -40,31 +40,31 @@ xcodebuild -project "NeatEditor.xcodeproj" \
 
 ## Tests
 
-仓库当前还没有测试 target，因此 `xcodebuild ... test` 暂时不会通过。
+The repository does not currently have a test target, so `xcodebuild ... test` will not pass yet.
 
-如果你新增了测试，请同步更新 `project.yml`，确保 scheme 的 test action 生效。
+If you add tests, please also update `project.yml` so the scheme's test action is configured correctly.
 
 ## Contribution Guidelines
 
-- 先读相关代码和上下文，再开始改动。
-- 尽量保持改动聚焦，不把功能修复和大范围格式整理混在一起。
-- 新增或删除源文件后，请重新执行 `xcodegen generate`。
-- 变更完成后，至少保证一次成功构建。
-- 如果改动影响窗口行为、命令菜单、保存流程或启动流程，请优先做实际运行验证。
+- Read the relevant code and surrounding context before making changes.
+- Keep changes focused, and avoid mixing feature fixes with broad formatting cleanups.
+- Re-run `xcodegen generate` after adding or removing source files.
+- Make sure the project builds successfully at least once before finishing.
+- If your changes affect window behavior, command menus, save flows, or startup behavior, prioritize a real app run for verification.
 
 ## Coding Style
 
-- 使用 4 空格缩进，UTF-8 + LF。
-- 每个 `import` 单独一行，不保留未使用 import。
-- 新代码优先使用 Swift 6 风格的并发与 Observation。
-- 除非必要，不引入 `ObservableObject`、`@Published`、`@StateObject`、`@ObservedObject`。
-- 不要新增 `!`、`try!`、`as!` 这类强制解包或强制转换。
+- Use 4-space indentation with UTF-8 + LF line endings.
+- Keep one `import` per line and remove unused imports.
+- Prefer Swift 6-style concurrency and Observation in new code.
+- Do not introduce `ObservableObject`, `@Published`, `@StateObject`, or `@ObservedObject` unless they are truly necessary.
+- Avoid adding force unwraps or forced casts such as `!`, `try!`, or `as!`.
 
 ## Pull Requests
 
-提交 PR 时，建议在描述里写清楚：
+When opening a PR, please include:
 
-- 改了什么
-- 为什么要改
-- 手动验证了什么
-- 是否影响文档、快捷键、保存行为或窗口交互
+- What changed
+- Why the change was needed
+- What you verified manually
+- Whether the change affects documentation, keyboard shortcuts, save behavior, or window interactions

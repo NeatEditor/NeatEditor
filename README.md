@@ -8,7 +8,7 @@
 
 > A minimal, fast-launching macOS plain text editor built with SwiftUI and AppKit for distraction-free writing, native desktop interactions, and efficient multi-tab editing.
 
-**Languages:** [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Français](./README.fr.md) | [Deutsch](./README.de.md)
+**Languages:** [English](./README.md) | [Simplified Chinese](./README.zh-CN.md) | [Japanese](./README.ja.md) | [Korean](./README.ko.md) | [Spanish](./README.es.md) | [French](./README.fr.md) | [German](./README.de.md)
 
 ## Screenshot
 
@@ -35,6 +35,24 @@ NeatEditor is built around a simple goal: reduce interface noise and keep your a
 - Pin-to-top window support and native title bar double-click zoom behavior.
 - Disk-backed rename behavior that preserves editable file extensions.
 - Blank content never overwrites existing files by design.
+
+## Main Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Command + N` | Create a new document. |
+| `Command + T` | Open another new tab. |
+| `Command + O` | Open one or more local text files. |
+| `Command + S` | Save the current tab immediately. |
+| `Command + W` | Save and close the current tab. |
+| `Shift + Command + T` | Reopen the most recently closed tab. |
+| `Command + F` | Show the inline find bar for the current editor. |
+| `Command + =` or `Command + +` | Zoom in the editor text. |
+| `Command + -` | Zoom out the editor text. |
+| `Command + ,` | Open Settings. |
+| `Shift + Return` | Insert a new line at the end of the current line. |
+
+Standard macOS text shortcuts such as `Command + Z`, `Command + X`, `Command + C`, and `Command + V` also work through the native text system.
 
 ## Current Status
 
@@ -110,14 +128,14 @@ NeatEditor/
 ├── CHANGELOG.md
 └── Sources/
     └── NeatEditor/
-        ├── App/             # 应用入口、菜单命令、外部文件打开协调
+        ├── App/             # App entry point, commands, and external file opening
         ├── Features/
-        │   ├── Editor/      # AppKit bridge 编辑器、行号与缩放
-        │   └── Workspace/   # 标签栏、工作区状态与主界面
-        ├── Services/        # 自动保存与文档持久化
-        ├── SharedUI/        # 共享样式与标题栏辅助视图
-        ├── Resources/       # 本地化资源
-        └── Assets.xcassets  # 图片资源
+        │   ├── Editor/      # AppKit bridge editor, line numbers, and zoom
+        │   └── Workspace/   # Tab strip, workspace state, and main UI
+        ├── Services/        # Autosave and document persistence
+        ├── SharedUI/        # Shared styling and title bar helper views
+        ├── Resources/       # Localization resources
+        └── Assets.xcassets  # Image assets
 ```
 
 ## Repository Docs
