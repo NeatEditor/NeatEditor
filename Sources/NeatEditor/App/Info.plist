@@ -4,6 +4,10 @@
 <dict>
     <key>CFBundleDisplayName</key>
     <string>NeatEditor</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
