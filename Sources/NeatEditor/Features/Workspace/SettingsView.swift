@@ -83,7 +83,7 @@ struct SettingsView: View {
                                 }
 
                             Text(
-                                "支持的 key: lightModeTextSoftness、darkModeTextSoftness、highContrastTextSoftness。取值范围 0...1，合法 JSON 会立即生效。"
+                                "Supported keys: lightModeTextSoftness, darkModeTextSoftness, highContrastTextSoftness. Values must be between 0 and 1, and valid JSON takes effect immediately."
                             )
                             .font(.caption)
                             .foregroundColor(.secondary)

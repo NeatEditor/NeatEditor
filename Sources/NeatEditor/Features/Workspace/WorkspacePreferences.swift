@@ -106,13 +106,21 @@ struct WorkspacePreferences: Codable, Equatable {
             var errorDescription: String? {
                 switch self {
                 case .rootMustBeObject:
-                    return "JSON 必须是一个对象，例如 { \"lightModeTextSoftness\": 0.16 }。"
+                    return String(
+                        localized: "JSON must be an object, for example { \"lightModeTextSoftness\": 0.16 }."
+                    )
                 case .unknownKey(let key):
-                    return "发现未知字段 \(key)。请只使用支持的柔度 key。"
+                    let messageFormat = String(
+                        localized: "Unknown key %@. Use only the supported text softness keys."
+                    )
+                    return String(format: messageFormat, key)
                 case .invalidStructure(let message):
-                    return "JSON 结构或值类型不正确：\(message)"
+                    let messageFormat = String(
+                        localized: "Invalid JSON structure or value type: %@"
+                    )
+                    return String(format: messageFormat, message)
                 case .invalidEncoding:
-                    return "无法生成配置 JSON。"
+                    return String(localized: "Could not generate configuration JSON.")
                 }
             }
         }

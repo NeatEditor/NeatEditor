@@ -7,7 +7,8 @@ struct DocumentPersistenceService {
         var errorDescription: String? {
             switch self {
             case .destinationAlreadyExists(let url):
-                return "A document named \"\(url.lastPathComponent)\" already exists."
+                let messageFormat = String(localized: "A document named \"%@\" already exists.")
+                return String(format: messageFormat, url.lastPathComponent)
             }
         }
     }
@@ -121,7 +122,7 @@ struct DocumentPersistenceService {
 
     func nextUntitledName(existingTabs: [EditorTab]) -> String {
         var maxN = 0
-        let baseName = "Untitled"
+        let baseName = String(localized: "Untitled")
 
         if let contents = try? fileManager.contentsOfDirectory(atPath: defaultDirectory.path) {
             for fileName in contents {

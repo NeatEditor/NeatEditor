@@ -9,6 +9,10 @@
 "View" = "视图";
 "Zoom In" = "放大";
 "Zoom Out" = "缩小";
+"Press" = "按下";
+"Use " = "使用";
+" to close the current tab" = "以关闭当前标签页";
+"Got it" = "知道了";
 
 "No Document Selected" = "未选中任何文档";
 "Search" = "搜索";
@@ -20,10 +24,25 @@
 "Editor" = "编辑器";
 "Tab Behavior" = "制表符行为";
 "Language" = "语言";
+"OK" = "确定";
 "System Default" = "跟随系统";
 "English" = "English";
 "Simplified Chinese" = "简体中文";
 "A restart is required for language changes to take effect." = "更改语言需要重启应用才能生效。";
+"Editor Text Softness JSON" = "编辑器文字柔化 JSON";
+"Supported keys: lightModeTextSoftness, darkModeTextSoftness, highContrastTextSoftness. Values must be between 0 and 1, and valid JSON takes effect immediately." = "支持的 key：lightModeTextSoftness、darkModeTextSoftness、highContrastTextSoftness。取值范围为 0 到 1，合法 JSON 会立即生效。";
+
+"Show in Finder" = "在 Finder 中显示";
+"Close Other Tabs" = "关闭其他标签";
+"Move to Trash" = "移至废纸篓";
+"Rename Failed" = "重命名失败";
+"“%@” already exists in this folder. Use a different name and try again." = "“%@” 已经存在于此文件夹中。请改用其他名称后重试。";
+"Failed to load document: %@" = "文档加载失败：%@";
+"A document named \"%@\" already exists." = "名为“%@”的文档已存在。";
+"JSON must be an object, for example { \"lightModeTextSoftness\": 0.16 }." = "JSON 必须是一个对象，例如 { \"lightModeTextSoftness\": 0.16 }。";
+"Unknown key %@. Use only the supported text softness keys." = "发现未知字段 %@。请只使用支持的文字柔化 key。";
+"Invalid JSON structure or value type: %@" = "JSON 结构或值类型不正确：%@";
+"Could not generate configuration JSON." = "无法生成配置 JSON。";
 
 "关闭其他标签" = "关闭其他标签";
 "移至废纸篓" = "移至废纸篓";

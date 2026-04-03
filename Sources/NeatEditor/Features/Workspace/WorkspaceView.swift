@@ -1,9 +1,16 @@
 import SwiftUI
 
 struct WorkspaceView: View {
+    private enum UserDefaultsKey {
+        static let hasShownCloseTabShortcutHint = "hasShownCloseTabShortcutHint"
+    }
+
     @Environment(WorkspaceStore.self) private var workspaceStore
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(UserDefaultsKey.hasShownCloseTabShortcutHint)
+    private var hasShownCloseTabShortcutHint = false
     @FocusState private var isSearchFieldFocused: Bool
+    @State private var isCloseTabShortcutHintVisible = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,6 +25,13 @@ struct WorkspaceView: View {
                 onDeleteTab: workspaceStore.moveToTrash,
                 onCloseOtherTabs: workspaceStore.closeOtherDocuments(keeping:)
             )
+
+            if isCloseTabShortcutHintVisible {
+                CloseTabShortcutHint {
+                    dismissCloseTabShortcutHint()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
 
             if let selectedTabID = workspaceStore.selectedTabID,
                let index = workspaceStore.tabs.firstIndex(where: { $0.id == selectedTabID }) {
@@ -94,12 +108,18 @@ struct WorkspaceView: View {
         .onChange(of: workspaceStore.searchState.focusRequestID) { _, _ in
             isSearchFieldFocused = workspaceStore.searchState.isPresented
         }
+        .onChange(of: workspaceStore.tabs.count) { _, newCount in
+            presentCloseTabShortcutHintIfNeeded(for: newCount)
+        }
         .dropDestination(for: URL.self) { items, _ in
             Task { @MainActor in
                 workspaceStore.openFiles(at: items)
             }
 
             return true
+        }
+        .task {
+            presentCloseTabShortcutHintIfNeeded(for: workspaceStore.tabs.count)
         }
     }
 
@@ -182,6 +202,74 @@ struct WorkspaceView: View {
                 }
             }
         )
+    }
+
+    private func presentCloseTabShortcutHintIfNeeded(for tabCount: Int) {
+        guard tabCount > 1, !hasShownCloseTabShortcutHint, !isCloseTabShortcutHintVisible else {
+            return
+        }
+
+        hasShownCloseTabShortcutHint = true
+        withAnimation(.snappy(duration: 0.24)) {
+            isCloseTabShortcutHintVisible = true
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            dismissCloseTabShortcutHint()
+        }
+    }
+
+    private func dismissCloseTabShortcutHint() {
+        guard isCloseTabShortcutHintVisible else {
+            return
+        }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isCloseTabShortcutHintVisible = false
+        }
+    }
+}
+
+private struct CloseTabShortcutHint: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Label("Press", systemImage: "keyboard")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            (
+                Text("Use ")
+                + Text("\u{2318}W").fontWeight(.semibold)
+                + Text(" to close the current tab")
+            )
+            .font(.system(size: 12))
+            .foregroundStyle(.primary)
+
+            Spacer(minLength: 0)
+
+            Button("Got it") {
+                onDismiss()
+            }
+            .buttonStyle(.plain)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(EditorChrome.tabBarBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(EditorChrome.border)
+                .frame(height: EditorChrome.lineWidth)
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(EditorChrome.border)
+                .frame(height: EditorChrome.lineWidth)
+        }
     }
 }
 

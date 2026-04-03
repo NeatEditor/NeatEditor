@@ -45,6 +45,10 @@ final class ZoomableTextView: NSTextView {
         super.keyDown(with: event)
     }
 
+    override func menu(for event: NSEvent) -> NSMenu? {
+        nil
+    }
+
     override func insertTab(_ sender: Any?) {
         insertText(tabBehavior.stringValue, replacementRange: selectedRange())
     }

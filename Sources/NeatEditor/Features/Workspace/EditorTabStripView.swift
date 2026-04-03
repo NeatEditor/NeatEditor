@@ -14,7 +14,7 @@ struct EditorTabStripView: View {
     static let leadingPadding: CGFloat = 76
     static let trailingTabScrollPadding: CGFloat = 12
     static let trailingAccessoryWidth: CGFloat = 48
-    static let trailingAccessoryPadding: CGFloat = 3
+    static let trailingAccessoryPadding: CGFloat = 4
     static let overflowFadeWidth: CGFloat = 16
     static let overflowVisibilityThreshold: CGFloat = 1
     static let minimumWindowEdge: CGFloat = {
@@ -71,6 +71,8 @@ struct EditorTabStripView: View {
                                 onSelectTab(tab.id)
                             } onRename: { newTitle in
                                 onRenameTab(tab.id, newTitle)
+                            } onClose: {
+                                onCloseTab(tab.id)
                             } onDelete: {
                                 onDeleteTab(tab.id)
                             } onCloseOthers: {
@@ -484,6 +486,7 @@ struct EditorTabItemView: View {
     @Binding var isEditing: Bool
     let action: () -> Void
     let onRename: (String) -> Void
+    let onClose: () -> Void
     let onDelete: (() -> Void)?
     let onCloseOthers: () -> Void
 
@@ -576,16 +579,23 @@ struct EditorTabItemView: View {
                 Button {
                     NSWorkspace.shared.activateFileViewerSelecting([fileURL])
                 } label: {
-                    Label("在 Finder 中显示", systemImage: "folder")
+                    Label("Show in Finder", systemImage: "folder")
                 }
                 Divider()
             }
 
+            Button {
+                onClose()
+            } label: {
+                Label("Close Tab", systemImage: "xmark")
+            }
+
             if tabCount > 1 {
+                Divider()
                 Button {
                     onCloseOthers()
                 } label: {
-                    Label("关闭其他标签", systemImage: "xmark.rectangle.portrait")
+                    Label("Close Other Tabs", systemImage: "xmark.rectangle.portrait")
                 }
             }
 
@@ -594,7 +604,7 @@ struct EditorTabItemView: View {
                 Button(role: .destructive) {
                     onDelete()
                 } label: {
-                    Label("移至废纸篓", systemImage: "trash")
+                    Label("Move to Trash", systemImage: "trash")
                 }
             }
         }

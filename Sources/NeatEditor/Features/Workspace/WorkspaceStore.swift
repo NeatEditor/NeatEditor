@@ -230,7 +230,7 @@ final class WorkspaceStore {
         
         saveSelectedDocumentIfNeeded()
         
-        let settingsTab = EditorTab(title: "Settings", isSettings: true)
+        let settingsTab = EditorTab(title: String(localized: "Settings"), isSettings: true)
         tabs.append(settingsTab)
         selectedTabID = settingsTab.id
         loadTabContentIfNeeded(id: settingsTab.id)
@@ -293,12 +293,12 @@ final class WorkspaceStore {
             saveState()
         } catch {
             if case let DocumentPersistenceService.PersistenceError.destinationAlreadyExists(url) = error {
+                let messageFormat = String(
+                    localized: "“%@” already exists in this folder. Use a different name and try again."
+                )
                 renameFailureAlert = RenameFailureAlert(
-                    title: "Rename Failed",
-                    message: """
-                    “\(url.lastPathComponent)” already exists in this folder. \
-                    Use a different name and try again.
-                    """
+                    title: String(localized: "Rename Failed"),
+                    message: String(format: messageFormat, url.lastPathComponent)
                 )
             }
             Self.logger.error("Failed to rename document: \(error.localizedDescription, privacy: .public)")
@@ -406,7 +406,11 @@ final class WorkspaceStore {
             } catch {
                 Self.logger.error("Failed to load document content lazily at \(fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 guard let currentIndex = self.tabs.firstIndex(where: { $0.id == id }) else { return }
-                self.tabs[currentIndex].content = "Failed to load document: \(error.localizedDescription)"
+                let messageFormat = String(localized: "Failed to load document: %@")
+                self.tabs[currentIndex].content = String(
+                    format: messageFormat,
+                    error.localizedDescription
+                )
             }
         }
     }
@@ -574,7 +578,10 @@ final class WorkspaceStore {
         
         for tabState in state.tabs {
             if tabState.isSettings {
-                let settingsTab = EditorTab(title: "Settings", isSettings: true)
+                let settingsTab = EditorTab(
+                    title: String(localized: "Settings"),
+                    isSettings: true
+                )
                 tabs.append(settingsTab)
                 if state.isSettingsSelected {
                     restoredSelectedTabID = settingsTab.id

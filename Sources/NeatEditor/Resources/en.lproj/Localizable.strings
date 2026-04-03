@@ -9,6 +9,10 @@
 "View" = "View";
 "Zoom In" = "Zoom In";
 "Zoom Out" = "Zoom Out";
+"Press" = "Press";
+"Use " = "Use ";
+" to close the current tab" = " to close the current tab";
+"Got it" = "Got it";
 
 "No Document Selected" = "No Document Selected";
 "Search" = "Search";
@@ -20,10 +24,25 @@
 "Editor" = "Editor";
 "Tab Behavior" = "Tab Behavior";
 "Language" = "Language";
+"OK" = "OK";
 "System Default" = "System Default";
 "English" = "English";
 "Simplified Chinese" = "Simplified Chinese";
 "A restart is required for language changes to take effect." = "A restart is required for language changes to take effect.";
+"Editor Text Softness JSON" = "Editor Text Softness JSON";
+"Supported keys: lightModeTextSoftness, darkModeTextSoftness, highContrastTextSoftness. Values must be between 0 and 1, and valid JSON takes effect immediately." = "Supported keys: lightModeTextSoftness, darkModeTextSoftness, highContrastTextSoftness. Values must be between 0 and 1, and valid JSON takes effect immediately.";
+
+"Show in Finder" = "Show in Finder";
+"Close Other Tabs" = "Close Other Tabs";
+"Move to Trash" = "Move to Trash";
+"Rename Failed" = "Rename Failed";
+"“%@” already exists in this folder. Use a different name and try again." = "“%@” already exists in this folder. Use a different name and try again.";
+"Failed to load document: %@" = "Failed to load document: %@";
+"A document named \"%@\" already exists." = "A document named \"%@\" already exists.";
+"JSON must be an object, for example { \"lightModeTextSoftness\": 0.16 }." = "JSON must be an object, for example { \"lightModeTextSoftness\": 0.16 }.";
+"Unknown key %@. Use only the supported text softness keys." = "Unknown key %@. Use only the supported text softness keys.";
+"Invalid JSON structure or value type: %@" = "Invalid JSON structure or value type: %@";
+"Could not generate configuration JSON." = "Could not generate configuration JSON.";
 
 "关闭其他标签" = "Close Other Tabs";
 "移至废纸篓" = "Move to Trash";

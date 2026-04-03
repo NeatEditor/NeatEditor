@@ -164,6 +164,13 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - 注释描述“为什么”，不要机械复述“代码做了什么”。
 - 不保留过期 TODO；如果留下 TODO，要具体说明缺什么。
 
+### 多语言（Localization）
+- 当前应用已内建英文与简体中文；所有用户可见文本必须同时提供 `en.lproj/Localizable.strings` 与 `zh-Hans.lproj/Localizable.strings` 两套文案。
+- 不要在 Swift 代码里硬编码单语文案；包括 `Text`、`Button`、`Label`、菜单、右键菜单、alert、placeholder、accessibility label、错误提示、空状态、设置说明文案都要走本地化。
+- 新增或修改文案时，优先使用稳定的英文 key；避免继续扩散“直接用中文句子做 key”的写法。
+- `AppLanguage.system` 表示跟随系统语言；若你修改了文案或语言切换逻辑，必须确认应用在中英文环境下都能正确显示，并与当前“重启后生效”的产品行为保持一致。
+- 特别注意 tab 标题、右键菜单、设置页、命令菜单，以及重命名/保存/加载失败提示和任何 `LocalizedError` 返回值，这些位置最容易漏掉本地化。
+
 ### 文件与工程变更
 - 新增 Swift 文件后，如果工程未自动包含，更新 `project.yml` 并重新执行 `xcodegen generate`。
 - 非必要不要提交 `.xcodeproj` 内部手工改动。
@@ -195,7 +202,7 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **NeatEditor** (60 symbols, 51 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **NeatEditor** (851 symbols, 2355 relationships, 74 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -283,8 +290,13 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 
 ## CLI
 
-- Re-index: `npx gitnexus analyze`
-- Check freshness: `npx gitnexus status`
-- Generate docs: `npx gitnexus wiki`
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
