@@ -134,13 +134,19 @@ struct EditorTabStripView: View {
         }
         .coordinateSpace(name: TabBarLayout.coordinateSpaceName)
         .onPreferenceChange(SelectedTabFramePreferenceKey.self) { frame in
-            selectedTabFrame = frame
+            Task { @MainActor in
+                selectedTabFrame = frame
+            }
         }
         .onPreferenceChange(TabFramesPreferenceKey.self) { frames in
-            tabFrames = frames
+            Task { @MainActor in
+                tabFrames = frames
+            }
         }
         .onPreferenceChange(TabScrollViewportFramePreferenceKey.self) { frame in
-            tabScrollViewportFrame = frame
+            Task { @MainActor in
+                tabScrollViewportFrame = frame
+            }
         }
         .background {
             ZStack(alignment: .bottom) {
