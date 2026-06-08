@@ -36,6 +36,17 @@ final class EditorTextContainerView: NSView {
     private let separatorView = NSView()
     private var gutterWidthConstraint: NSLayoutConstraint?
 
+    // Cached "last applied" values short-circuit the high-frequency SwiftUI
+    // updateNSView path. Reassigning NSTextView.textColor or rewriting
+    // typingAttributes triggers a full text-storage re-attribution and
+    // dictionary copy-on-write — repeating that on every redraw was a
+    // significant CPU/allocation source under sustained load.
+    private var appliedTypingAttributesFont: NSFont?
+    private var appliedTypingAttributesForegroundColor: NSColor?
+    private var appliedTextColor: NSColor?
+    private var appliedBackgroundColor: NSColor?
+    private var appliedInsertionPointColor: NSColor?
+
     override var isFlipped: Bool {
         true
     }
@@ -124,18 +135,12 @@ final class EditorTextContainerView: NSView {
         refreshLineNumbers()
     }
 
-    func enforceEditorTextAttributesIfNeeded() {
-        let font = editorMonospacedFont()
-        updateTextViewColors()
-        applyDefaultTypingAttributes(using: font)
-    }
-
     func prepareTypingAttributes(for replacementString: String?) {
         _ = replacementString
         applyDefaultTypingAttributes(using: editorMonospacedFont())
     }
 
-    func performSearch(for query: String, usesRegularExpression: Bool) {
+    func performSearch(for query: String, usesRegularExpression: Bool, navigate: Bool = true) {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
             clearSearchHighlights()
@@ -145,7 +150,7 @@ final class EditorTextContainerView: NSView {
         let fullText = textView.string
         guard !fullText.isEmpty else {
             clearSearchHighlights()
-            NSSound.beep()
+            if navigate { NSSound.beep() }
             return
         }
 
@@ -157,11 +162,13 @@ final class EditorTextContainerView: NSView {
 
         guard !matchRanges.isEmpty else {
             clearSearchHighlights()
-            NSSound.beep()
+            if navigate { NSSound.beep() }
             return
         }
 
         applySearchHighlights(for: matchRanges)
+
+        guard navigate else { return }
 
         let selectedRange = textView.selectedRange()
         let selectionEnd = selectedRange.location == NSNotFound
@@ -249,7 +256,7 @@ final class EditorTextContainerView: NSView {
         }
     }
 
-    private func clearSearchHighlights() {
+    func clearSearchHighlights() {
         guard let layoutManager = textView.layoutManager,
               let textContainer = textView.textContainer else {
             return
@@ -304,18 +311,27 @@ final class EditorTextContainerView: NSView {
     }
 
     private func applyDefaultTypingAttributes(using font: NSFont) {
-        let paragraphStyle = Self.editorParagraphStyle()
+        let foregroundColor = editorForegroundColor()
+        if appliedTypingAttributesFont == font,
+           appliedTypingAttributesForegroundColor == foregroundColor {
+            return
+        }
+
+        let paragraphStyle = Self.sharedEditorParagraphStyle
         textView.defaultParagraphStyle = paragraphStyle
         textView.typingAttributes[.font] = font
         textView.typingAttributes[.paragraphStyle] = paragraphStyle
-        textView.typingAttributes[.foregroundColor] = editorForegroundColor()
+        textView.typingAttributes[.foregroundColor] = foregroundColor
+
+        appliedTypingAttributesFont = font
+        appliedTypingAttributesForegroundColor = foregroundColor
     }
 
-    private static func editorParagraphStyle() -> NSParagraphStyle {
+    private static let sharedEditorParagraphStyle: NSParagraphStyle = {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineHeightMultiple = editorLineHeightMultiple
         return paragraphStyle
-    }
+    }()
 
     private func editorForegroundColor() -> NSColor {
         Self.editorForegroundColor(
@@ -406,11 +422,26 @@ final class EditorTextContainerView: NSView {
     }
 
     private func updateTextViewColors() {
-        textView.textColor = Self.editorForegroundColor(
+        let foregroundColor = Self.editorForegroundColor(
             for: effectiveAppearance,
             textSoftness: textSoftness
         )
-        textView.backgroundColor = .controlBackgroundColor
-        textView.insertionPointColor = .labelColor
+        let backgroundColor = NSColor.controlBackgroundColor
+        let insertionPointColor = NSColor.labelColor
+
+        // Reassigning textColor walks the entire NSTextStorage to re-attribute
+        // every glyph. Skip the round-trip when the value is unchanged.
+        if appliedTextColor != foregroundColor {
+            textView.textColor = foregroundColor
+            appliedTextColor = foregroundColor
+        }
+        if appliedBackgroundColor != backgroundColor {
+            textView.backgroundColor = backgroundColor
+            appliedBackgroundColor = backgroundColor
+        }
+        if appliedInsertionPointColor != insertionPointColor {
+            textView.insertionPointColor = insertionPointColor
+            appliedInsertionPointColor = insertionPointColor
+        }
     }
 }

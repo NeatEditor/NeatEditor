@@ -53,6 +53,15 @@ final class WorkspaceStore {
     @ObservationIgnored
     private let autoSaveScheduler: AutoSaveScheduler
 
+    // saveState() is invoked from many small mutating paths and previously did
+    // a synchronous JSONEncoder + UserDefaults write per call. Coalesce
+    // back-to-back invocations onto a short trailing debounce so a single
+    // user-triggered batch (e.g. open files / select tab / autosave) results
+    // in one persisted snapshot instead of several. Always flush before
+    // app-lifecycle save points.
+    @ObservationIgnored
+    private var pendingSaveStateTask: Task<Void, Never>?
+
     private var closedTabs: [ClosedTabSnapshot] = []
 
     init(
@@ -356,6 +365,11 @@ final class WorkspaceStore {
         for tab in tabs {
             saveDocument(id: tab.id)
         }
+        // saveDocument enqueues a debounced saveState; force a synchronous
+        // flush here because saveAllDocuments is invoked at lifecycle
+        // boundaries (scenePhase != active, app termination) where we cannot
+        // rely on the debounce window completing.
+        flushPendingSaveState()
     }
 
     func cancelAutoSave(for id: UUID) {
@@ -525,11 +539,33 @@ final class WorkspaceStore {
     private func saveState() {
         guard !isRestoringState else { return }
 
+        pendingSaveStateTask?.cancel()
+        pendingSaveStateTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(50))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            self?.pendingSaveStateTask = nil
+            self?.performSaveStateNow()
+        }
+    }
+
+    private func flushPendingSaveState() {
+        pendingSaveStateTask?.cancel()
+        pendingSaveStateTask = nil
+        performSaveStateNow()
+    }
+
+    private func performSaveStateNow() {
+        guard !isRestoringState else { return }
+
         let stateTabs = tabs.map { WorkspaceState.TabState(fileURL: $0.fileURL, isSettings: $0.isSettings) }
-        
+
         var selectedFileURL: URL?
         var isSettingsSelected = false
-        
+
         if let selectedTabID {
             if let tab = tabs.first(where: { $0.id == selectedTabID }) {
                 if tab.isSettings {
@@ -539,14 +575,14 @@ final class WorkspaceStore {
                 }
             }
         }
-        
+
         let state = WorkspaceState(
             tabs: stateTabs,
             selectedFileURL: selectedFileURL,
             isSettingsSelected: isSettingsSelected,
             preferences: preferences
         )
-        
+
         do {
             let data = try JSONEncoder().encode(state)
             UserDefaults.standard.set(data, forKey: UserDefaultsKey.workspaceState)

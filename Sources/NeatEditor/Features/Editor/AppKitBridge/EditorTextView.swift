@@ -62,14 +62,36 @@ struct EditorTextView: NSViewRepresentable {
         }
 
         containerView.applyFontSize(fontSize)
-        containerView.enforceEditorTextAttributesIfNeeded()
+        // Color/typing-attribute upkeep is driven by textSoftness didSet and
+        // viewDidChangeEffectiveAppearance; repeating it on every SwiftUI
+        // redraw was the dominant CPU source during long sessions.
 
-        if context.coordinator.lastSearchRequestID != searchState.requestID {
-            context.coordinator.lastSearchRequestID = searchState.requestID
-            containerView.performSearch(
-                for: searchState.query,
-                usesRegularExpression: searchState.isRegexEnabled
-            )
+        let query = searchState.trimmedQuery
+        let isRegex = searchState.isRegexEnabled
+        let isPresented = searchState.isPresented
+        let coordinator = context.coordinator
+
+        if coordinator.lastSearchWasPresented && !isPresented {
+            containerView.clearSearchHighlights()
+        }
+
+        coordinator.lastSearchWasPresented = isPresented
+
+        if isPresented {
+            let requestChanged = coordinator.lastSearchRequestID != searchState.requestID
+            let queryChanged = coordinator.lastAppliedSearchQuery != query
+            let regexChanged = coordinator.lastAppliedIsRegex != isRegex
+
+            if requestChanged || queryChanged || regexChanged {
+                coordinator.lastSearchRequestID = searchState.requestID
+                coordinator.lastAppliedSearchQuery = query
+                coordinator.lastAppliedIsRegex = isRegex
+                containerView.performSearch(
+                    for: query,
+                    usesRegularExpression: isRegex,
+                    navigate: requestChanged
+                )
+            }
         }
     }
 
@@ -78,6 +100,9 @@ struct EditorTextView: NSViewRepresentable {
         var parent: EditorTextView
         var isSyncingFromSwiftUI = false
         var lastSearchRequestID = 0
+        var lastAppliedSearchQuery = ""
+        var lastAppliedIsRegex = false
+        var lastSearchWasPresented = false
 
         init(parent: EditorTextView) {
             self.parent = parent
