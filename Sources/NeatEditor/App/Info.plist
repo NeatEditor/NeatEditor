@@ -32,7 +32,15 @@
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
     <string>15.0</string>
-    <key>NSHumanReadableCopyright</key>
-    <string>Copyright © 2026 x0c. Released under the MIT License.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 x0c. Released under the MIT License.</string>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/NeatEditor/NeatEditor/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>0nk/wv36FgctLwob/oEocAaBMuXapY7BZ8+ae1RJ9bU=</string>
 </dict>
 </plist>
