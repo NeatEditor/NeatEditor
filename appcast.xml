@@ -13,7 +13,7 @@
 
 - 更新包经过 Sparkle EdDSA 签名、Developer ID 签名与苹果公证。
 ]]></description>
-            <enclosure url="https://github.com/NeatEditor/NeatEditor/releases/download/v1.0.1/NeatEditor-1.0.1.zip" length="1878384" type="application/octet-stream" sparkle:edSignature="f8K5tLBvYuAxO79mtsrECf/HKqX+UC9IafUfe74sdhSQnjl197WWPDuCTIbNnXAY+nNNhA4j8a8ln+dSI141BQ=="/>
+            <enclosure url="https://github.com/NeatEditor/NeatEditor/releases/download/v1.0.1/NeatEditor-1.0.1.zip" length="1878465" type="application/octet-stream" sparkle:edSignature="CpCDMBTPCb8dYcGUP5l8RnWiKiGfggBmCs56QTxyfNCi07nCc0WfBWTfpFqA8IJHH308qensog9grUuczejaCw=="/>
         </item>
     </channel>
 </rss>
