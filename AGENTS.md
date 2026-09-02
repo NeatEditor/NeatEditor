@@ -1,3 +1,18 @@
+<!-- managed:inherited-agents:start -->
+<!-- source: /Users/geraltgraham/Codes/NeatEditor/AGENTS.md -->
+# NeatEditor
+
+macOS 纯文本编辑器（SwiftUI + AppKit）。
+
+通用工程规范：[Swift 规范](../_standards/swift.md)
+
+## 文档导航
+
+- [app-macos/AGENTS.md](app-macos/AGENTS.md)：改、评审或排查编辑器功能前必读。
+- [app-macos/docs/TITLEBAR_CHROME_GUIDE.md](app-macos/docs/TITLEBAR_CHROME_GUIDE.md)：改最低系统版本、标题栏、标签外观或标题栏液态玻璃前必读。不读会把标签或正文做成玻璃。
+
+<!-- managed:inherited-agents:end -->
+
 # AGENTS.md
 本文件是 NeatEditor 仓库内 agent 的工作手册。
 在本仓库中工作时，优先遵守这里的约定，再结合通用编码常识执行。
@@ -206,3 +221,8 @@ xcodebuild -project "NeatEditor.xcodeproj" -scheme "NeatEditor" -configuration D
 - 重启 App 时，必须从 `/Applications/NeatEditor.app` 启动；如果 `open` 启动失败，必须再重试 2 次；只有连续 3 次都失败时，才可结束并明确说明启动失败。
 - 若测试仍未配置，不要谎称已跑测试；应明确说明“已构建/已 analyze，但 test action 尚不存在”。
 - 若你新增了测试设施，请同步更新本文件中的命令示例。
+
+## 文档导航
+
+- `docs/troubleshooting/2026-08-09-app-icon-stale-install.md`：改、替换、还原代码或排查「图标变成白底手写 A / 被还原到几个月前」前**必读**。不读会把公开仓里的占位图装回本机，盖掉现行蓝底卷纸图标。
+- 现行图标母版：`design/app-icon/AppIcon-1024.png`。工程内 `AppIcon.appiconset` 必须跟这张走，不要跟 git 历史上的占位图走。
