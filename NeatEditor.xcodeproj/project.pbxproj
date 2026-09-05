@@ -12,20 +12,25 @@
 		247B4DD44E7B8560AA53E2D1 /* WorkspacePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1674FE73DFD3A99700320E6 /* WorkspacePreferences.swift */; };
 		260FB1D768B914BEC7E705CE /* LineNumberGutterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF0D55E27675FFDA411D699 /* LineNumberGutterView.swift */; };
 		28C0A08E8F3EA4403F48347A /* NeatEditorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE177253A6D16097E143352 /* NeatEditorApp.swift */; };
+		29DDA9044DD7A7AA65F009B5 /* WorkspaceStore+Tabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E8818FBAFDC00F396FB2C0 /* WorkspaceStore+Tabs.swift */; };
 		2F0D92985DE89AFB1227039E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CC4981C6B05519CD1877B4D5 /* Assets.xcassets */; };
 		30257E6B79239E28AD1DFF2A /* EditorTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE07E7303361F05267B1085 /* EditorTab.swift */; };
 		3143A92017C91179B2A2A7ED /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997F47F5D36FCDF06285DFAB /* ZoomableScrollView.swift */; };
+		348B695F38A92793385342D0 /* WorkspaceStore+Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 034DD46D84F8B203A8D6476F /* WorkspaceStore+Preferences.swift */; };
 		39BD2850BB05C043F8377344 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = EEC6A22F39D1E5EC9B13E1CB /* Localizable.strings */; };
 		40E4B08329E49913ADF40EFC /* EditorTextContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */; };
 		44208CD4C131FC71C34946E1 /* EditorTabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60AEF291D6C5985830C89ABF /* EditorTabStripView.swift */; };
+		47254445FBCCB7AD560ED455 /* WorkspaceStore+Search.swift in Sources */ = {isa = PBXBuildFile; fileRef = A08FFD0C3BD5FFC0B4C04B01 /* WorkspaceStore+Search.swift */; };
 		4A7455D8ED46B4FC817A58B3 /* EditorChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */; };
 		4C28ACC82CF6ADE661F5C511 /* WorkspaceSearchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8918469298602DC5C5D7047 /* WorkspaceSearchState.swift */; };
 		4C6DD29CD0452D9311044BE8 /* EditorTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FC9CB3A37D479100CB1B9D6 /* EditorTextView.swift */; };
+		4FCF5DB5C7FC0F1E1FC740D4 /* WorkspaceStore+StateRestoration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E32406E8C86E9797FA92149D /* WorkspaceStore+StateRestoration.swift */; };
 		6C4A4EF55D4E956B1CB30509 /* DocumentPersistenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */; };
 		83AA4C1985409273788FD141 /* EditorTabItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98813FD87C11733B55049246 /* EditorTabItemView.swift */; };
 		85E7BB7174B4D000CEFDE8A6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */; };
 		93921D6CEFE951DE0C2E142A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 35B5BE7CD19E6AD7BA68BF31 /* Sparkle */; };
 		A344426D812AD628E5414D35 /* TitleBarTrafficLightAlignmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DB9D86BBC9C10E24C2579C1 /* TitleBarTrafficLightAlignmentView.swift */; };
+		A5CD4E4CA843E095AEF9E4F4 /* WorkspaceStore+Documents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE02D7D1B8648861CEB95405 /* WorkspaceStore+Documents.swift */; };
 		AB52501F00EC0F86E18D6C3C /* AutoSaveScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */; };
 		B94CDB60C07A6AB1960668D4 /* ExternalFileOpenCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C74314E17C1CDECDF2EDB4 /* ExternalFileOpenCoordinator.swift */; };
 		CC0213689BC7EBC733DEE876 /* EditorTabPreferenceKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1666943FD2B1A70363D36B4C /* EditorTabPreferenceKeys.swift */; };
@@ -36,6 +41,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		034DD46D84F8B203A8D6476F /* WorkspaceStore+Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkspaceStore+Preferences.swift"; sourceTree = "<group>"; };
 		0CA0DD15623CA315741B803E /* ZoomableTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableTextView.swift; sourceTree = "<group>"; };
 		0CF0D55E27675FFDA411D699 /* LineNumberGutterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberGutterView.swift; sourceTree = "<group>"; };
 		14452BE9113FCDDB6CE97192 /* AutoSaveScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSaveScheduler.swift; sourceTree = "<group>"; };
@@ -55,14 +61,18 @@
 		997F47F5D36FCDF06285DFAB /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableScrollView.swift; sourceTree = "<group>"; };
 		9B3C22F933FC00FD61B5DAF0 /* EditorTextContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextContainerView.swift; sourceTree = "<group>"; };
 		9E4EDF9A6AA28B3E0BB1ED45 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A08FFD0C3BD5FFC0B4C04B01 /* WorkspaceStore+Search.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkspaceStore+Search.swift"; sourceTree = "<group>"; };
 		A7A960C8B24796C5DB2C6589 /* DocumentPersistenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPersistenceService.swift; sourceTree = "<group>"; };
 		A8918469298602DC5C5D7047 /* WorkspaceSearchState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSearchState.swift; sourceTree = "<group>"; };
+		A8E8818FBAFDC00F396FB2C0 /* WorkspaceStore+Tabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkspaceStore+Tabs.swift"; sourceTree = "<group>"; };
 		BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceView.swift; sourceTree = "<group>"; };
 		C59982890BA0049E8CC31E4F /* NeatEditor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NeatEditor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CC4981C6B05519CD1877B4D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CE02D7D1B8648861CEB95405 /* WorkspaceStore+Documents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkspaceStore+Documents.swift"; sourceTree = "<group>"; };
 		CEE07E7303361F05267B1085 /* EditorTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTab.swift; sourceTree = "<group>"; };
 		D1A82D78D7CE0B95C71D0971 /* EditorChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorChrome.swift; sourceTree = "<group>"; };
 		E1674FE73DFD3A99700320E6 /* WorkspacePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspacePreferences.swift; sourceTree = "<group>"; };
+		E32406E8C86E9797FA92149D /* WorkspaceStore+StateRestoration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkspaceStore+StateRestoration.swift"; sourceTree = "<group>"; };
 		FF4DB92AF9B1A147AEED3F20 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -89,6 +99,11 @@
 				E1674FE73DFD3A99700320E6 /* WorkspacePreferences.swift */,
 				A8918469298602DC5C5D7047 /* WorkspaceSearchState.swift */,
 				63FEBB9D3DE2E196F6FABC88 /* WorkspaceStore.swift */,
+				CE02D7D1B8648861CEB95405 /* WorkspaceStore+Documents.swift */,
+				034DD46D84F8B203A8D6476F /* WorkspaceStore+Preferences.swift */,
+				A08FFD0C3BD5FFC0B4C04B01 /* WorkspaceStore+Search.swift */,
+				E32406E8C86E9797FA92149D /* WorkspaceStore+StateRestoration.swift */,
+				A8E8818FBAFDC00F396FB2C0 /* WorkspaceStore+Tabs.swift */,
 				BF4FFD7351F34190C76B4C7D /* WorkspaceView.swift */,
 			);
 			path = Workspace;
@@ -320,6 +335,11 @@
 				16EC1F059C67919FE7417ECA /* WorkspaceCommands.swift in Sources */,
 				247B4DD44E7B8560AA53E2D1 /* WorkspacePreferences.swift in Sources */,
 				4C28ACC82CF6ADE661F5C511 /* WorkspaceSearchState.swift in Sources */,
+				A5CD4E4CA843E095AEF9E4F4 /* WorkspaceStore+Documents.swift in Sources */,
+				348B695F38A92793385342D0 /* WorkspaceStore+Preferences.swift in Sources */,
+				47254445FBCCB7AD560ED455 /* WorkspaceStore+Search.swift in Sources */,
+				4FCF5DB5C7FC0F1E1FC740D4 /* WorkspaceStore+StateRestoration.swift in Sources */,
+				29DDA9044DD7A7AA65F009B5 /* WorkspaceStore+Tabs.swift in Sources */,
 				DCDC8B0D5BE86A4D3B12A9E1 /* WorkspaceStore.swift in Sources */,
 				F9F0759B221E03E66297E6D5 /* WorkspaceView.swift in Sources */,
 				3143A92017C91179B2A2A7ED /* ZoomableScrollView.swift in Sources */,
