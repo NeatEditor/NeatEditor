@@ -32,12 +32,6 @@ macOS 纯文本编辑器（SwiftUI + AppKit）。
 - 工程管理：XcodeGen（`project.yml`）
 - Xcode：16.2+
 
-## 已检查的额外规则文件
-- 已检查 `.cursor/rules/`：未找到规则文件。
-- 已检查 `.cursorrules`：未找到规则文件。
-- 已检查 `.github/copilot-instructions.md`：未找到规则文件。
-- 因此当前仓库没有额外的 Cursor/Copilot 本地规则；本文件即仓库内 agent 约定的主要来源。
-
 ## 仓库结构
 - `project.yml`：XcodeGen 配置，是工程结构的真实来源。
 - `NeatEditor.xcodeproj`：生成产物；除非 `project.yml` 无法表达，否则不要手改。
