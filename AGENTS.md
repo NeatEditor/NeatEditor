@@ -4,11 +4,11 @@
 
 macOS 纯文本编辑器（SwiftUI + AppKit）。
 
-通用工程规范：[Swift 规范](../_standards/swift.md)
+通用工程规范：[Swift 规范](/Users/geraltgraham/Codes/_standards/swift.md)
 
 ## 文档导航
 
-- [app-macos/AGENTS.md](app-macos/AGENTS.md)：改、评审或排查编辑器功能前必读。
+- [app-macos/AGENTS.md](/Users/geraltgraham/Codes/NeatEditor/app-macos/AGENTS.md)：改、评审或排查编辑器功能前必读。
 - 标题栏、标签外观与液态玻璃等界面约束仍以全局 CLIENT_UI 与现有 design 文档为准（本仓无独立标题栏指南）。
 
 <!-- managed:inherited-agents:end -->
