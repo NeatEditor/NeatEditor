@@ -9,7 +9,7 @@ macOS 纯文本编辑器（SwiftUI + AppKit）。
 ## 文档导航
 
 - [app-macos/AGENTS.md](app-macos/AGENTS.md)：改、评审或排查编辑器功能前必读。
-- [app-macos/docs/TITLEBAR_CHROME_GUIDE.md](app-macos/docs/TITLEBAR_CHROME_GUIDE.md)：改最低系统版本、标题栏、标签外观或标题栏液态玻璃前必读。不读会把标签或正文做成玻璃。
+- 标题栏、标签外观与液态玻璃等界面约束仍以全局 CLIENT_UI 与现有 design 文档为准（本仓无独立标题栏指南）。
 
 <!-- managed:inherited-agents:end -->
 
