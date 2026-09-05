@@ -21,7 +21,7 @@ macOS 纯文本编辑器（SwiftUI + AppKit）。
 
 在阅读本文件的同时，也要先参考 Swift 工作区级规范：
 
-- `/Users/geraltgraham/Codes/Swift/AGENTS.md`
+- [Swift 工作区规范](../../_standards/swift.md)
 
 如果项目内规则与外层工作区规则有冲突，以当前仓库内的 `AGENTS.md` 为准；外层文档作为通用基线。
 
